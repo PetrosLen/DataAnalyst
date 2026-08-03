@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: wheretoto
+      POSTGRES_PASSWORD: wheretoto
+      POSTGRES_DB: wheretoto
+    ports:
+      - "5432:5432"
+    volumes:
+      - wheretoto_db_data:/var/lib/postgresql/data
+
+volumes:
+  wheretoto_db_data:
