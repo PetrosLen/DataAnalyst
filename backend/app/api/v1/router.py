@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.v1 import feedback, health, search, venues
+from app.api.v1.admin import usage as admin_usage
 from app.api.v1.admin import venues as admin_venues
 
 api_router = APIRouter()
@@ -9,3 +10,4 @@ api_router.include_router(search.router)
 api_router.include_router(venues.router)
 api_router.include_router(feedback.router)
 api_router.include_router(admin_venues.router)
+api_router.include_router(admin_usage.router)

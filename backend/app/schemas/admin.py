@@ -66,6 +66,14 @@ class AdminVenueDetail(AdminVenueListItem):
     media: list[AdminVenueMediaOut]
 
 
+class GooglePlacesUsageOut(BaseModel):
+    year_month: str
+    call_count: int
+    cap: int
+    safety_margin: int
+    capped: bool  # true once call_count has reached (cap - safety_margin) — the enrichment script has stopped itself
+
+
 class AdminVenueUpdate(BaseModel):
     name: str | None = None
     description_short: str | None = None

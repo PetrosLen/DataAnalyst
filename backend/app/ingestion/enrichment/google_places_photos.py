@@ -34,6 +34,14 @@ so you can sanity-check matches before spending API calls on photos.
 
 Since photo references genuinely expire, plan to re-run this periodically
 (e.g. every few months) for venues you want to keep fresh, not just once.
+
+Monthly safety cap: every billable call (Text Search / Place Details /
+Photo media) is counted in google_places_usage; once the running total for
+the current calendar month gets within settings.
+google_places_monthly_call_safety_margin of settings.
+google_places_monthly_call_cap, the run stops itself rather than risk going
+over. The admin panel shows the same counter (GET /admin/google-places-usage)
+so you don't have to run this script just to check where you stand.
 """
 
 from __future__ import annotations
@@ -48,6 +56,7 @@ from app.core.config import settings
 from app.db.models import Venue, VenueMedia, VenueSource
 from app.db.session import SessionLocal
 from app.ingestion.enrichment.google_places_client import GooglePlacesClient, GooglePlacesError
+from app.ingestion.enrichment.usage_guard import MonthlyCapReached, register_call
 
 
 def _venue_lat_lon(db: Session, venue: Venue) -> tuple[float, float]:
@@ -64,6 +73,7 @@ def _ensure_place_id(
         return venue.google_place_id
 
     lat, lon = _venue_lat_lon(db, venue)
+    register_call(db)
     matches = client.search_text(f"{venue.name}, Thessaloniki", lat, lon)
     if not matches:
         print(f"  [{venue.slug}] no Google Places match found, skipping")
@@ -99,6 +109,7 @@ def enrich_venue(
         return 0
 
     try:
+        register_call(db)
         photos = client.get_photos(place_id, max_photos=max_photos)
     except GooglePlacesError as exc:
         print(f"  [{venue.slug}] failed to fetch photos: {exc}")
@@ -125,6 +136,7 @@ def enrich_venue(
     saved = 0
     for i, photo in enumerate(photos):
         try:
+            register_call(db)
             photo_uri = client.resolve_photo_uri(photo.name)
             content, content_type = client.download(photo_uri)
         except GooglePlacesError as exc:
@@ -180,7 +192,11 @@ def main() -> None:
                 has_media = db.query(VenueMedia).filter(VenueMedia.venue_id == venue.id).count() > 0
                 if has_media:
                     continue
-            total_saved += enrich_venue(db, client, venue, args.max_photos, args.dry_run)
+            try:
+                total_saved += enrich_venue(db, client, venue, args.max_photos, args.dry_run)
+            except MonthlyCapReached as exc:
+                print(f"Stopping early: {exc}")
+                break
 
         if args.dry_run:
             print(f"Dry run done. Would save {total_saved} photo(s). Nothing was written.")

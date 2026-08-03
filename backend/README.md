@@ -39,14 +39,15 @@ alembic upgrade head
 alembic downgrade -1
 ```
 
-## Τρέχον schema (migrations `0001`-`0007`)
+## Τρέχον schema (migrations `0001`-`0008`)
 
 Καλύπτει τα "core" tables του Week 1 (`city_areas`, `categories`, `tags`, `admin_users`, `venues`,
 `venue_categories`, `venue_sources`, `venue_hours`, `venue_tags`, `venue_signals`) plus
 `search_logs`/`recommendation_events` (Week 2, για το `/search` endpoint) plus `confidence_audits`
 (audit trail για admin edits) plus `user_feedback` (thumbs up/down κ.λπ., + `audience` — βλ.
 §Feedback) plus `venue_media` (φωτογραφίες, + `attribution` — βλ. §Photos παρακάτω). Το `venues`
-απέκτησε επίσης `google_place_id` (βλ. §Photos). Οι υπόλοιποι πίνακες του πλήρους schema
+απέκτησε επίσης `google_place_id` (βλ. §Photos), και `google_places_usage` μετράει τις μηνιαίες
+κλήσεις στο Google Places API (βλ. §"Monthly call cap"). Οι υπόλοιποι πίνακες του πλήρους schema
 (`sponsored_placements`, `content_pages`, `update_jobs`, `venue_reviews_internal`,
 `user_submitted_corrections`, `duplicate_candidates`, `recommendation_engine_config`) θα
 προστεθούν σε επόμενα migrations καθώς χτίζεται το αντίστοιχο functionality (βλ. backlog στο
@@ -226,6 +227,24 @@ photo request (Google's "Pro" SKU tier), with 5,000 free requests/month as of th
 pricing model (no more flat $200 credit). Since this script fetches photos once per venue (not per
 page view) and this project has ~10-50 venues, expect to stay well inside the free tier in
 practice — but set a budget alert in Google Cloud Console regardless.
+
+### Monthly call cap (`app/ingestion/enrichment/usage_guard.py`)
+
+A second, app-level safety net on top of the Google Cloud budget alert above — this one actually
+stops the script from calling Google, rather than just emailing you after the fact. Every billable
+call (Text Search, Place Details, Photo media — not the plain image download that follows, which
+doesn't hit the Places API) increments a `google_places_usage` row for the current calendar month.
+Before each call, the script checks that counter and refuses to make the call — raising and
+stopping the whole run — once it's within `google_places_monthly_call_safety_margin` (default 30)
+of `google_places_monthly_call_cap` (default 1000, both configurable in `.env`). It stops itself
+*short* of the cap on purpose: a batch of several venues can be mid-flight when the threshold is
+crossed, and the margin is the buffer for that.
+
+`GET /admin/google-places-usage` exposes the same counter (`{year_month, call_count, cap,
+safety_margin, capped}`), and the admin panel shows it as a banner at the top of the review queue —
+calm/muted under 75% of the effective cap, amber above that, red once the script has actually
+stopped itself. No separate alerting system; the banner is the notification, checked whenever
+someone opens `/admin`.
 
 Admin workflow:
 - `GET /api/v1/admin/venues/{id}` → `media: [{id, url, license_ok, attribution}]`,

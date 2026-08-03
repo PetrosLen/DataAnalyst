@@ -55,6 +55,14 @@ export type AdminVenueDetail = AdminVenueListItem & {
   media: AdminVenueMedia[];
 };
 
+export type GooglePlacesUsage = {
+  year_month: string;
+  call_count: number;
+  cap: number;
+  safety_margin: number;
+  capped: boolean;
+};
+
 export type AdminVenueUpdate = Partial<{
   name: string;
   description_short: string;
@@ -118,6 +126,11 @@ export async function updateVenue(
     method: "PATCH",
     body: JSON.stringify(update),
   });
+  return res.json();
+}
+
+export async function getGooglePlacesUsage(creds: AdminCredentials): Promise<GooglePlacesUsage> {
+  const res = await adminFetch("/admin/google-places-usage", creds, undefined);
   return res.json();
 }
 

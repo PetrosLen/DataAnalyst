@@ -36,11 +36,13 @@ npm run dev
   venue + κουμπί "Οδηγίες" (deep link σε Google Maps βάσει διεύθυνσης) + `FeedbackWidget` (👍/👎 +
   "κάτι δεν είναι σωστό" → έκλεισε/λάθος στοιχεία, καλεί `POST /feedback`).
 - `/admin` — Login (HTTP Basic credentials, αποθηκευμένα σε `sessionStorage`, όχι localStorage) +
-  venue review queue με tabs ανά status, inline edit ανά venue (όλα τα πεδία + tags/sources/photos
-  για context) και κουμπί "Έγκριση τώρα". Κάθε φωτογραφία δείχνει ξεχωριστό status "⚠ Χρειάζεται
-  επιβεβαίωση άδειας" / "✓ Εγκεκριμένη άδεια" με δικό της toggle (+ attribution caption από κάτω
-  όταν υπάρχει) — μια φωτογραφία **δεν** γίνεται ποτέ public μόνη της απλά επειδή προστέθηκε στη
-  βάση. Χρειάζεται admin user (βλ. backend README, `create_admin_user` script).
+  banner Google Places API usage (`X / 1000 κλήσεις αυτόν τον μήνα`, βλ. backend README §"Monthly
+  call cap" — ήρεμο χρώμα κάτω από 75%, κίτρινο πάνω από αυτό, κόκκινο όταν το script έχει
+  σταματήσει μόνο του) + venue review queue με tabs ανά status, inline edit ανά venue (όλα τα πεδία
+  + tags/sources/photos για context) και κουμπί "Έγκριση τώρα". Κάθε φωτογραφία δείχνει ξεχωριστό
+  status "⚠ Χρειάζεται επιβεβαίωση άδειας" / "✓ Εγκεκριμένη άδεια" με δικό της toggle (+ attribution
+  caption από κάτω όταν υπάρχει) — μια φωτογραφία **δεν** γίνεται ποτέ public μόνη της απλά επειδή
+  προστέθηκε στη βάση. Χρειάζεται admin user (βλ. backend README, `create_admin_user` script).
 
 ## Σημαντικό: μόνο `status="active"` venues εμφανίζονται στο public app
 
@@ -73,6 +75,10 @@ sandboxed δίκτυο και μπλοκάρει το React hydration, οπότ�
   screenshot εκεί έδειχνε "σπασμένη εικόνα" — επιβεβαιώθηκε ξεχωριστά με πραγματικό HTTP request
   (browser-like headers) ότι η εικόνα φορτώνει κανονικά (200, image/jpeg, ~118KB). Σε πραγματικό
   browser χρήστη ή production deployment δεν υπάρχει τέτοιος περιορισμός.
+- Google Places usage banner: γέμισε το `google_places_usage` directly με SQL (καμία πραγματική
+  κλήση στο Google δεν χρειάζεται για να το ελέγξεις) και επιβεβαιώθηκαν οπτικά και τα 3 states —
+  12/1000 (ήρεμο μωβ), 760/1000 (κίτρινο, "πλησιάζουμε το όριο"), 975/1000 (κόκκινο, "σταμάτησε
+  αυτόματα") — μετά καθαρίστηκε η test-only γραμμή από τη βάση.
 
 ## Design
 

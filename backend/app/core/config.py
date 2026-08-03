@@ -19,6 +19,13 @@ class Settings(BaseSettings):
     # be this same API process.
     media_dir: str = "media"
     media_public_base_url: str = "http://localhost:8000/media"
+    # Safety net so a big/looping enrichment run can never rack up a
+    # surprise bill: the script stops making Google Places API calls once
+    # the current calendar month's count reaches (cap - safety_margin), a
+    # bit early on purpose so an in-flight batch doesn't tip past the free
+    # tier. See app/ingestion/enrichment/usage_guard.py.
+    google_places_monthly_call_cap: int = 1000
+    google_places_monthly_call_safety_margin: int = 30
 
     @property
     def cors_origins_list(self) -> list[str]:

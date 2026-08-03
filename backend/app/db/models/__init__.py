@@ -2,6 +2,7 @@ from app.db.models.admin_user import AdminUser
 from app.db.models.category import Category
 from app.db.models.city_area import CityArea
 from app.db.models.confidence_audit import ConfidenceAudit
+from app.db.models.google_places_usage import GooglePlacesUsage
 from app.db.models.recommendation_event import RecommendationEvent
 from app.db.models.search_log import SearchLog
 from app.db.models.tag import Tag
@@ -19,6 +20,7 @@ __all__ = [
     "Category",
     "CityArea",
     "ConfidenceAudit",
+    "GooglePlacesUsage",
     "RecommendationEvent",
     "SearchLog",
     "Tag",

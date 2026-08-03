@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   AdminAuthError,
+  getGooglePlacesUsage,
   getVenue,
   listVenues,
   updateVenue,
@@ -11,6 +12,7 @@ import {
   type AdminVenueDetail,
   type AdminVenueListItem,
   type AdminVenueUpdate,
+  type GooglePlacesUsage,
 } from "@/lib/adminApi";
 import {
   clearCredentials,
@@ -135,6 +137,16 @@ function VenueReviewQueue({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [usage, setUsage] = useState<GooglePlacesUsage | null>(null);
+
+  useEffect(() => {
+    getGooglePlacesUsage(creds)
+      .then(setUsage)
+      .catch(() => {
+        // Non-critical — the review queue itself still works without this.
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function refresh() {
     setLoading(true);
@@ -172,6 +184,8 @@ function VenueReviewQueue({
           Αποσύνδεση ({creds.email})
         </button>
       </div>
+
+      {usage && <GooglePlacesUsageBanner usage={usage} />}
 
       <div className="flex gap-2 flex-wrap">
         {STATUS_TABS.map((tab) => (
@@ -214,6 +228,45 @@ function VenueReviewQueue({
         <p className="text-muted text-sm">Καμία καταχώρηση σε αυτό το status.</p>
       )}
     </main>
+  );
+}
+
+function GooglePlacesUsageBanner({ usage }: { usage: GooglePlacesUsage }) {
+  const effectiveCap = usage.cap - usage.safety_margin;
+  const ratio = effectiveCap > 0 ? usage.call_count / effectiveCap : 0;
+
+  const tone = usage.capped
+    ? { wrap: "border-danger bg-danger/10 text-danger", bar: "bg-danger" }
+    : ratio >= 0.75
+      ? { wrap: "border-accent-2 bg-accent-2/15 text-accent-2-foreground", bar: "bg-accent-2" }
+      : { wrap: "border-border bg-card text-muted", bar: "bg-accent" };
+
+  return (
+    <div className={`rounded-2xl border-2 px-4 py-3 text-xs flex flex-col gap-1.5 ${tone.wrap}`}>
+      <div className="flex items-center justify-between font-bold">
+        <span>
+          {usage.capped ? "⛔" : ratio >= 0.75 ? "⚠️" : "📷"} Google Places API — {usage.year_month}
+        </span>
+        <span>
+          {usage.call_count} / {usage.cap} κλήσεις
+        </span>
+      </div>
+      <div className="h-1.5 rounded-full bg-border/60 overflow-hidden">
+        <div
+          className={`h-full rounded-full ${tone.bar}`}
+          style={{ width: `${Math.min(100, Math.round((usage.call_count / usage.cap) * 100))}%` }}
+        />
+      </div>
+      {usage.capped ? (
+        <p>
+          Σταμάτησε αυτόματα — έφτασε τις {usage.call_count}/{usage.cap} κλήσεις (safety margin{" "}
+          {usage.safety_margin}), ώστε να μην πληρώσουμε πάνω από το δωρεάν όριο. Το enrichment
+          script δεν θα κάνει άλλες κλήσεις μέχρι τον επόμενο μήνα.
+        </p>
+      ) : ratio >= 0.75 ? (
+        <p>Πλησιάζουμε το μηνιαίο όριο ασφαλείας ({effectiveCap} κλήσεις).</p>
+      ) : null}
+    </div>
   );
 }
 

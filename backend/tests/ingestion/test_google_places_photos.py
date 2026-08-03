@@ -1,9 +1,11 @@
+import pytest
 from geoalchemy2.elements import WKTElement
 
 from app.core.config import settings
 from app.db.models import Venue, VenueMedia, VenueSource
 from app.ingestion.enrichment.google_places_client import PlaceMatch, PlacePhoto
 from app.ingestion.enrichment.google_places_photos import enrich_venue
+from app.ingestion.enrichment.usage_guard import MonthlyCapReached, get_usage, register_call
 
 
 class FakeGooglePlacesClient:
@@ -126,3 +128,31 @@ def test_enrich_venue_place_with_no_photos(db_session, tmp_path, monkeypatch):
 
     assert saved == 0
     assert venue.google_place_id == "place123"  # place match still recorded
+
+
+def test_enrich_venue_raises_when_monthly_cap_already_exhausted(db_session, tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "media_dir", str(tmp_path))
+    monkeypatch.setattr(settings, "google_places_monthly_call_cap", 1)
+    monkeypatch.setattr(settings, "google_places_monthly_call_safety_margin", 0)
+    register_call(db_session)  # use up the one call this fake month allows
+
+    venue = _seed_venue(db_session)
+    client = FakeGooglePlacesClient()
+
+    with pytest.raises(MonthlyCapReached):
+        enrich_venue(db_session, client, venue, max_photos=3, dry_run=False)
+
+    assert client.search_text_calls == 0
+    assert venue.google_place_id is None
+    assert db_session.query(VenueMedia).filter_by(venue_id=venue.id).count() == 0
+
+
+def test_enrich_venue_dry_run_still_spends_search_text_budget(db_session, tmp_path, monkeypatch):
+    # Text Search is a real billable call even in --dry-run — only Photos calls are skipped.
+    monkeypatch.setattr(settings, "media_dir", str(tmp_path))
+    venue = _seed_venue(db_session)
+    client = FakeGooglePlacesClient()
+
+    enrich_venue(db_session, client, venue, max_photos=3, dry_run=True)
+
+    assert get_usage(db_session).call_count == 1
