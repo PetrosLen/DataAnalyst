@@ -1,6 +1,8 @@
 from app.db.models.admin_user import AdminUser
 from app.db.models.category import Category
 from app.db.models.city_area import CityArea
+from app.db.models.recommendation_event import RecommendationEvent
+from app.db.models.search_log import SearchLog
 from app.db.models.tag import Tag
 from app.db.models.venue import Venue
 from app.db.models.venue_category import VenueCategory
@@ -13,6 +15,8 @@ __all__ = [
     "AdminUser",
     "Category",
     "CityArea",
+    "RecommendationEvent",
+    "SearchLog",
     "Tag",
     "Venue",
     "VenueCategory",
