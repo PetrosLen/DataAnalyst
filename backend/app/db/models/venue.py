@@ -39,6 +39,13 @@ class Venue(Base):
     phone: Mapped[str | None] = mapped_column(String, nullable=True)
     website: Mapped[str | None] = mapped_column(String, nullable=True)
     instagram_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Google Place ID (the "places/PLACE_ID" resource id) — per Google Maps
+    # Platform ToS §3.2.3(b), this is the one Places API value exempt from
+    # the no-caching rule, so it's safe to store indefinitely as the stable
+    # link used to re-fetch fresh photos later (see
+    # app/ingestion/enrichment/google_places_photos.py). Everything else
+    # from Places (name, address, photo references) must not be warehoused.
+    google_place_id: Mapped[str | None] = mapped_column(String, nullable=True, unique=True)
     price_level: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
     primary_category_id: Mapped[int | None] = mapped_column(
         ForeignKey("categories.id"), nullable=True

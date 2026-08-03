@@ -39,13 +39,14 @@ alembic upgrade head
 alembic downgrade -1
 ```
 
-## Τρέχον schema (migrations `0001`-`0006`)
+## Τρέχον schema (migrations `0001`-`0007`)
 
 Καλύπτει τα "core" tables του Week 1 (`city_areas`, `categories`, `tags`, `admin_users`, `venues`,
 `venue_categories`, `venue_sources`, `venue_hours`, `venue_tags`, `venue_signals`) plus
 `search_logs`/`recommendation_events` (Week 2, για το `/search` endpoint) plus `confidence_audits`
 (audit trail για admin edits) plus `user_feedback` (thumbs up/down κ.λπ., + `audience` — βλ.
-§Feedback) plus `venue_media` (φωτογραφίες, βλ. §Photos παρακάτω). Οι υπόλοιποι πίνακες του πλήρους schema
+§Feedback) plus `venue_media` (φωτογραφίες, + `attribution` — βλ. §Photos παρακάτω). Το `venues`
+απέκτησε επίσης `google_place_id` (βλ. §Photos). Οι υπόλοιποι πίνακες του πλήρους schema
 (`sponsored_placements`, `content_pages`, `update_jobs`, `venue_reviews_internal`,
 `user_submitted_corrections`, `duplicate_candidates`, `recommendation_engine_config`) θα
 προστεθούν σε επόμενα migrations καθώς χτίζεται το αντίστοιχο functionality (βλ. backlog στο
@@ -169,27 +170,66 @@ and the low-confidence/stale/duplicate queues from the design doc (`§11`) — t
 ## Photos (`venue_media`)
 
 Every photo row starts with `license_ok=False`, no matter how it was sourced — `GET /venues/{slug}`
-(public) only ever returns `photo_urls` where `license_ok=True`. This is deliberate: it's the same
+(public) only ever returns `photos` where `license_ok=True`. This is deliberate: it's the same
 "nothing goes live without a human confirming it" rule the rest of the app follows, applied to
 images specifically because of copyright risk (see `PATCH /admin/venues/{id}/media/{id}` below).
 
-**Sourcing status as of this batch:** only **1 of 10** seed venues (Orizontes Roof Garden) has a
-photo, sourced from its confirmed official website (`orizontesrestaurant.com`). For the other 9,
-no safe source was found — most small independent bars/cafes in the seed only have Instagram/
-Facebook presence, which isn't something this pipeline scrapes or hotlinks (against platform ToS,
-and URLs there aren't stable). One domain that looked like an official site
+**Sourcing status as of the manual seed batch:** only **1 of 10** seed venues (Orizontes Roof
+Garden) has a photo, sourced from its confirmed official website (`orizontesrestaurant.com`). For
+the other 9, no safe source was found — most small independent bars/cafes in the seed only have
+Instagram/Facebook presence, which isn't something this pipeline scrapes or hotlinks (against
+platform ToS, and URLs there aren't stable). One domain that looked like an official site
 (`vogatsikou3.gr`) turned out to be an **expired domain now repurposed as an unrelated online
 casino review site** — a reminder to verify page content before trusting a URL, not just that it
 resolves.
 
-**The real fix for full photo coverage is the Google Places API** (Place Photos), which requires a
-Google Cloud project + billing on the founder's own account — not something this pipeline can set
-up unilaterally. Once a `GOOGLE_PLACES_API_KEY` exists, an enrichment script can be added to
-`app/ingestion/enrichment/` to pull photos for every venue automatically (still landing as
-`license_ok=False` pending admin review, per the rule above).
+### Google Places photo enrichment (`app/ingestion/enrichment/google_places_photos.py`)
+
+The real fix for full photo coverage. Requires a `GOOGLE_PLACES_API_KEY` from a billing-enabled
+Google Cloud project (not something this pipeline can set up on its own — see pricing note below).
+Once the key is in `backend/.env`:
+
+```bash
+# Sanity-check matches first — prints "our venue" vs "Google's match" side by
+# side, calls Text Search only (no Photos calls, no writes)
+python -m app.ingestion.enrichment.google_places_photos --dry-run
+
+# For real, once the matches above look right
+python -m app.ingestion.enrichment.google_places_photos
+
+# One venue, more photos, even if it already has some
+python -m app.ingestion.enrichment.google_places_photos --slug vogatsikou-3 --max-photos 5 --force
+```
+
+Per venue: Text Search finds the Google Place (biased to the venue's own coordinates), Place
+Details fetches its current photos + required attribution text, and each photo is downloaded and
+saved under `backend/media/venues/<slug>/`, served back via `/media/...` (mounted as static files
+in `app/main.py`). New photos land exactly like any other source — `license_ok=False`,
+`source_type="google_places"` in `venue_sources` — an admin still has to look at the photo and
+confirm it's actually the right place before `GET /venues/{slug}` will ever return it.
+
+Two Places API caching rules shape the design, per Google Maps Platform ToS §3.2.3(b):
+- **`venues.google_place_id` is stored indefinitely** — it's the one Places value the ToS exempts
+  from the no-caching rule, so once a venue is matched it's trusted and never re-searched by name
+  again (`--force` only bypasses the "already has media" skip that controls whether photos get
+  re-fetched — it doesn't touch an existing `google_place_id`).
+- **Photo references and download URLs are never persisted** — both expire, so the script resolves
+  and downloads a photo's bytes immediately after fetching its reference, and stores only our own
+  copy of the pixels. Since references do expire, **re-run this periodically** (e.g. every few
+  months) for venues you want to keep photo coverage fresh — it's not a one-time job.
+- When a photo has `authorAttributions`, Google requires that credit to be shown wherever the image
+  appears — that's what `venue_media.attribution` is for; both the venue page and the admin panel
+  render it.
+
+**Pricing (check before enabling billing — this changes over time):** Place Photos is ~$0.007 per
+photo request (Google's "Pro" SKU tier), with 5,000 free requests/month as of the post-March-2025
+pricing model (no more flat $200 credit). Since this script fetches photos once per venue (not per
+page view) and this project has ~10-50 venues, expect to stay well inside the free tier in
+practice — but set a budget alert in Google Cloud Console regardless.
 
 Admin workflow:
-- `GET /api/v1/admin/venues/{id}` → `media: [{id, url, license_ok}]`
+- `GET /api/v1/admin/venues/{id}` → `media: [{id, url, license_ok, attribution}]`,
+  `google_place_id` (for spotting a bad Text Search match)
 - `PATCH /api/v1/admin/venues/{id}/media/{media_id}` with `{"license_ok": true}` → makes a photo
   public; logged to `confidence_audits` (`entity_type="venue_media"`) like any other edit.
 

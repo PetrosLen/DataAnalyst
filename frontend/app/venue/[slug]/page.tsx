@@ -26,13 +26,20 @@ export default async function VenuePage({
         ← Πίσω στα αποτελέσματα
       </Link>
 
-      {venue.photo_urls.length > 0 ? (
-        // eslint-disable-next-line @next/next/no-img-element -- external, unpredictable domains; not worth configuring next/image remotePatterns for
-        <img
-          src={venue.photo_urls[0]}
-          alt={venue.name}
-          className="w-full h-48 object-cover rounded-3xl border border-border"
-        />
+      {venue.photos.length > 0 ? (
+        <div className="relative">
+          {/* eslint-disable-next-line @next/next/no-img-element -- external, unpredictable domains; not worth configuring next/image remotePatterns for */}
+          <img
+            src={venue.photos[0].url}
+            alt={venue.name}
+            className="w-full h-48 object-cover rounded-3xl border border-border"
+          />
+          {venue.photos[0].attribution && (
+            <span className="absolute bottom-1.5 right-2.5 text-[10px] text-white/90 bg-black/40 rounded-full px-2 py-0.5">
+              {venue.photos[0].attribution}
+            </span>
+          )}
+        </div>
       ) : (
         <div className="w-full h-28 rounded-3xl bg-gradient-to-br from-accent/15 to-accent-2/25 border border-border flex items-center justify-center text-3xl">
           📍

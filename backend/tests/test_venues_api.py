@@ -36,11 +36,17 @@ def test_get_active_venue_returns_detail(client, db_session):
     assert response.json()["slug"] == venue.slug
 
 
-def test_venue_photo_urls_only_include_licensed_media(client, db_session):
+def test_venue_photos_only_include_licensed_media(client, db_session):
     venue = _seed_venue(db_session)
     db_session.add_all(
         [
-            VenueMedia(venue_id=venue.id, url="https://example.com/licensed.jpg", license_ok=True, sort_order=0),
+            VenueMedia(
+                venue_id=venue.id,
+                url="https://example.com/licensed.jpg",
+                license_ok=True,
+                sort_order=0,
+                attribution="Photo by Someone, Google",
+            ),
             VenueMedia(venue_id=venue.id, url="https://example.com/unlicensed.jpg", license_ok=False, sort_order=1),
         ]
     )
@@ -48,11 +54,13 @@ def test_venue_photo_urls_only_include_licensed_media(client, db_session):
 
     response = client.get(f"/api/v1/venues/{venue.slug}")
     assert response.status_code == 200
-    photo_urls = response.json()["photo_urls"]
-    assert photo_urls == ["https://example.com/licensed.jpg"]
+    photos = response.json()["photos"]
+    assert photos == [
+        {"url": "https://example.com/licensed.jpg", "attribution": "Photo by Someone, Google"}
+    ]
 
 
 def test_venue_with_no_media_returns_empty_photo_list(client, db_session):
     venue = _seed_venue(db_session)
     response = client.get(f"/api/v1/venues/{venue.slug}")
-    assert response.json()["photo_urls"] == []
+    assert response.json()["photos"] == []

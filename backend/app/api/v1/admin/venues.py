@@ -129,6 +129,7 @@ def _to_detail(db: Session, venue: Venue) -> AdminVenueDetail:
         instagram_url=venue.instagram_url,
         price_level=venue.price_level,
         last_verified_at=venue.last_verified_at,
+        google_place_id=venue.google_place_id,
         tags=[
             AdminVenueTagOut(slug=s, name=n, confidence=float(c), assigned_by=a)
             for s, n, c, a in tags
@@ -144,7 +145,10 @@ def _to_detail(db: Session, venue: Venue) -> AdminVenueDetail:
             for s in sources
         ],
         feedback_counts=feedback_counts,
-        media=[AdminVenueMediaOut(id=m.id, url=m.url, license_ok=m.license_ok) for m in media],
+        media=[
+            AdminVenueMediaOut(id=m.id, url=m.url, license_ok=m.license_ok, attribution=m.attribution)
+            for m in media
+        ],
     )
 
 

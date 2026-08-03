@@ -27,6 +27,7 @@ class AdminVenueMediaOut(BaseModel):
     id: int
     url: str
     license_ok: bool
+    attribution: str | None
 
 
 class AdminVenueMediaUpdate(BaseModel):
@@ -58,6 +59,7 @@ class AdminVenueDetail(AdminVenueListItem):
     instagram_url: str | None
     price_level: int | None
     last_verified_at: datetime | None
+    google_place_id: str | None
     tags: list[AdminVenueTagOut]
     sources: list[AdminVenueSourceOut]
     feedback_counts: dict[str, int]

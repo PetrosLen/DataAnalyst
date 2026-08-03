@@ -75,6 +75,11 @@ export type VenueTag = {
   confidence: number;
 };
 
+export type VenuePhoto = {
+  url: string;
+  attribution: string | null;
+};
+
 export type VenueDetail = {
   slug: string;
   name: string;
@@ -88,7 +93,7 @@ export type VenueDetail = {
   primary_category_slug: string | null;
   overall_confidence: number;
   tags: VenueTag[];
-  photo_urls: string[];
+  photos: VenuePhoto[];
 };
 
 export async function getVenue(slug: string): Promise<VenueDetail | null> {

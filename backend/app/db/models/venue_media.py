@@ -17,3 +17,7 @@ class VenueMedia(Base):
     source_id: Mapped[int | None] = mapped_column(ForeignKey("venue_sources.id"), nullable=True)
     license_ok: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    # Required by Google when a Places (New) photo has authorAttributions —
+    # must be shown alongside the image wherever it's displayed. Null for
+    # photos from sources that don't require it (e.g. a venue's own site).
+    attribution: Mapped[str | None] = mapped_column(String, nullable=True)

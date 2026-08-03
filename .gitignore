@@ -12,6 +12,10 @@ venv/
 .env
 .env.local
 
+# Downloaded venue photos (backend/app/ingestion/enrichment/google_places_photos.py) —
+# generated content, not source; re-fetchable from Google Places any time.
+backend/media/
+
 # Node / frontend
 node_modules/
 .next/

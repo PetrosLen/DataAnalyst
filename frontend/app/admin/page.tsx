@@ -404,6 +404,9 @@ function VenueEditPanel({
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-[10px] text-muted truncate">{m.url}</p>
+                  {m.attribution && (
+                    <p className="text-[10px] text-muted truncate italic">{m.attribution}</p>
+                  )}
                   <p
                     className={`text-[10px] font-bold ${m.license_ok ? "text-success" : "text-danger"}`}
                   >

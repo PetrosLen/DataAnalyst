@@ -33,7 +33,12 @@ export type AdminVenueSource = {
   last_checked_at: string | null;
 };
 
-export type AdminVenueMedia = { id: number; url: string; license_ok: boolean };
+export type AdminVenueMedia = {
+  id: number;
+  url: string;
+  license_ok: boolean;
+  attribution: string | null;
+};
 
 export type AdminVenueDetail = AdminVenueListItem & {
   description_short: string | null;
@@ -44,6 +49,7 @@ export type AdminVenueDetail = AdminVenueListItem & {
   instagram_url: string | null;
   price_level: number | null;
   last_verified_at: string | null;
+  google_place_id: string | null;
   tags: AdminVenueTag[];
   sources: AdminVenueSource[];
   media: AdminVenueMedia[];

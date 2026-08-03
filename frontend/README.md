@@ -31,15 +31,16 @@ npm run dev
   tag `quiet` και ξανακάνει search· "πιο οικονομικά" → μειώνει το budget cap· "πιο κοντινά" →
   client-side re-sort, χωρίς νέο API call).
 - `/venue/[slug]` — Server component, καλεί `GET /venues/{slug}`, δείχνει hero photo (αν υπάρχει
-  εγκεκριμένη — αλλιώς playful placeholder), στοιχεία venue + κουμπί "Οδηγίες" (deep link σε Google
-  Maps βάσει διεύθυνσης) + `FeedbackWidget` (👍/👎 + "κάτι δεν είναι σωστό" → έκλεισε/λάθος
-  στοιχεία, καλεί `POST /feedback`).
+  εγκεκριμένη — αλλιώς playful placeholder· με caption attribution πάνω στη φωτογραφία όταν το
+  API το επιστρέφει, π.χ. φωτογραφίες από Google Places — βλ. backend README §Photos), στοιχεία
+  venue + κουμπί "Οδηγίες" (deep link σε Google Maps βάσει διεύθυνσης) + `FeedbackWidget` (👍/👎 +
+  "κάτι δεν είναι σωστό" → έκλεισε/λάθος στοιχεία, καλεί `POST /feedback`).
 - `/admin` — Login (HTTP Basic credentials, αποθηκευμένα σε `sessionStorage`, όχι localStorage) +
   venue review queue με tabs ανά status, inline edit ανά venue (όλα τα πεδία + tags/sources/photos
   για context) και κουμπί "Έγκριση τώρα". Κάθε φωτογραφία δείχνει ξεχωριστό status "⚠ Χρειάζεται
-  επιβεβαίωση άδειας" / "✓ Εγκεκριμένη άδεια" με δικό της toggle — μια φωτογραφία **δεν** γίνεται
-  ποτέ public μόνη της απλά επειδή προστέθηκε στη βάση. Χρειάζεται admin user (βλ. backend README,
-  `create_admin_user` script).
+  επιβεβαίωση άδειας" / "✓ Εγκεκριμένη άδεια" με δικό της toggle (+ attribution caption από κάτω
+  όταν υπάρχει) — μια φωτογραφία **δεν** γίνεται ποτέ public μόνη της απλά επειδή προστέθηκε στη
+  βάση. Χρειάζεται admin user (βλ. backend README, `create_admin_user` script).
 
 ## Σημαντικό: μόνο `status="active"` venues εμφανίζονται στο public app
 

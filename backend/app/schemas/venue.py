@@ -9,6 +9,13 @@ class VenueTagOut(BaseModel):
     confidence: float
 
 
+class VenuePhotoOut(BaseModel):
+    url: str
+    # Set when Google (or another source) requires it to be shown alongside
+    # the image — render it as a visible caption, don't drop it.
+    attribution: str | None
+
+
 class VenueDetailOut(BaseModel):
     slug: str
     name: str
@@ -22,4 +29,4 @@ class VenueDetailOut(BaseModel):
     primary_category_slug: str | None
     overall_confidence: float
     tags: list[VenueTagOut]
-    photo_urls: list[str]
+    photos: list[VenuePhotoOut]
