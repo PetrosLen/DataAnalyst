@@ -13,6 +13,7 @@ from app.db.models import (
     Tag,
     UserFeedback,
     Venue,
+    VenueMedia,
     VenueSource,
     VenueTag,
 )
@@ -21,6 +22,8 @@ from app.schemas.admin import (
     AdminVenueDetail,
     AdminVenueListItem,
     AdminVenueListResponse,
+    AdminVenueMediaOut,
+    AdminVenueMediaUpdate,
     AdminVenueSourceOut,
     AdminVenueTagOut,
     AdminVenueUpdate,
@@ -94,6 +97,12 @@ def _to_detail(db: Session, venue: Venue) -> AdminVenueDetail:
         .all()
     )
     sources = db.query(VenueSource).filter(VenueSource.venue_id == venue.id).all()
+    media = (
+        db.query(VenueMedia)
+        .filter(VenueMedia.venue_id == venue.id)
+        .order_by(VenueMedia.sort_order)
+        .all()
+    )
     feedback_counts = dict(
         db.query(UserFeedback.feedback_type, func.count(UserFeedback.id))
         .filter(UserFeedback.venue_id == venue.id)
@@ -132,6 +141,7 @@ def _to_detail(db: Session, venue: Venue) -> AdminVenueDetail:
             for s in sources
         ],
         feedback_counts=feedback_counts,
+        media=[AdminVenueMediaOut(id=m.id, url=m.url, license_ok=m.license_ok) for m in media],
     )
 
 
@@ -177,6 +187,42 @@ def update_venue(
 
     if venue.status == "active" and old_status != "active":
         venue.last_verified_at = datetime.now(timezone.utc)
+
+    db.commit()
+    db.refresh(venue)
+    return _to_detail(db, venue)
+
+
+@router.patch("/venues/{venue_id}/media/{media_id}", response_model=AdminVenueDetail)
+def update_venue_media(
+    venue_id: int,
+    media_id: int,
+    payload: AdminVenueMediaUpdate,
+    admin: AdminUser = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+) -> AdminVenueDetail:
+    """Toggle license_ok on a photo. This is the switch that makes a photo
+    public (GET /venues/{slug} only ever returns license_ok=True media) —
+    nothing sourced automatically goes live without this explicit confirmation."""
+    venue = db.query(Venue).filter_by(id=venue_id).first()
+    if venue is None:
+        raise HTTPException(status_code=404, detail="Venue not found")
+    media = db.query(VenueMedia).filter_by(id=media_id, venue_id=venue_id).first()
+    if media is None:
+        raise HTTPException(status_code=404, detail="Media not found")
+
+    if media.license_ok != payload.license_ok:
+        db.add(
+            ConfidenceAudit(
+                entity_type="venue_media",
+                entity_id=media.id,
+                field_name="license_ok",
+                old_value=str(media.license_ok),
+                new_value=str(payload.license_ok),
+                changed_by=admin.email,
+            )
+        )
+        media.license_ok = payload.license_ok
 
     db.commit()
     db.refresh(venue)

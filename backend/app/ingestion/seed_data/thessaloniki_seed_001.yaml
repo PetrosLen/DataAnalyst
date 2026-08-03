@@ -232,8 +232,10 @@ venues:
       - {slug: scenic-view, confidence: 0.7}
       - {slug: couple-friendly, confidence: 0.55}
     hours: []
+    photos:
+      - url: "https://orizontesrestaurant.com/wp-content/uploads/2026/03/electra-palace-thessaloniki-orizontes-1024x787.jpg"
     overall_confidence: 0.38
-    source_ref: "https://www.savoirville.gr/thessaloniki-spots-gia-prwto-rantevou/"
+    source_ref: "https://www.savoirville.gr/thessaloniki-spots-gia-prwto-rantevou/ ; photo from official site https://orizontesrestaurant.com/"
 
   - slug: paparouna-wine-culture
     name: "Paparouna Wine Culture Restaurant"

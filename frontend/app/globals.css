@@ -1,15 +1,31 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --accent: #22d3ee;
+  --background: #fffdfb;
+  --foreground: #1a1523;
+  --muted: #7a7486;
+  --card: #ffffff;
+  --border: #efe8ee;
+  --accent: #ff3e7f;
+  --accent-foreground: #ffffff;
+  --accent-2: #ffc93c;
+  --accent-2-foreground: #1a1523;
+  --success: #12b76a;
+  --danger: #f04438;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-card: var(--card);
+  --color-border: var(--border);
   --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-2: var(--accent-2);
+  --color-accent-2-foreground: var(--accent-2-foreground);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
 }
 
 body {
@@ -20,9 +36,9 @@ body {
 }
 
 .admin-input {
-  background: #0a0a0a;
-  border: 1px solid #404040;
-  border-radius: 0.5rem;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
   color: var(--foreground);

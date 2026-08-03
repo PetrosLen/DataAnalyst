@@ -22,14 +22,27 @@ export default async function VenuePage({
 
   return (
     <main className="flex-1 flex flex-col mx-auto w-full max-w-md px-5 pt-6 pb-10 gap-5">
-      <Link href="/results" className="text-sm text-neutral-400 hover:text-neutral-200">
+      <Link href="/results" className="text-sm text-muted hover:text-accent font-medium">
         ← Πίσω στα αποτελέσματα
       </Link>
 
+      {venue.photo_urls.length > 0 ? (
+        // eslint-disable-next-line @next/next/no-img-element -- external, unpredictable domains; not worth configuring next/image remotePatterns for
+        <img
+          src={venue.photo_urls[0]}
+          alt={venue.name}
+          className="w-full h-48 object-cover rounded-3xl border border-border"
+        />
+      ) : (
+        <div className="w-full h-28 rounded-3xl bg-gradient-to-br from-accent/15 to-accent-2/25 border border-border flex items-center justify-center text-3xl">
+          📍
+        </div>
+      )}
+
       <header>
-        <h1 className="text-2xl font-bold text-neutral-50">{venue.name}</h1>
+        <h1 className="text-2xl font-extrabold text-foreground">{venue.name}</h1>
         {venue.description_short && (
-          <p className="mt-1 text-sm text-neutral-400">{venue.description_short}</p>
+          <p className="mt-1 text-sm text-muted">{venue.description_short}</p>
         )}
       </header>
 
@@ -37,17 +50,15 @@ export default async function VenuePage({
         {venue.tags.map((tag) => (
           <span
             key={tag.slug}
-            className="text-xs rounded-full border border-neutral-700 px-3 py-1 text-neutral-300"
+            className="text-xs font-semibold rounded-full border-2 border-border bg-card px-3 py-1 text-foreground"
           >
             {tag.name}
           </span>
         ))}
       </div>
 
-      <dl className="grid grid-cols-1 gap-2 text-sm border-t border-neutral-800 pt-4">
-        {venue.address && (
-          <Row label="Διεύθυνση" value={venue.address} />
-        )}
+      <dl className="grid grid-cols-1 gap-2 text-sm border-t border-border pt-4">
+        {venue.address && <Row label="Διεύθυνση" value={venue.address} />}
         {venue.phone && <Row label="Τηλέφωνο" value={venue.phone} />}
         {venue.price_level && <Row label="Budget" value={"€".repeat(venue.price_level)} />}
         <Row
@@ -60,7 +71,7 @@ export default async function VenuePage({
         href={directionsUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="w-full text-center rounded-2xl bg-accent text-neutral-950 font-semibold py-4 text-base"
+        className="w-full text-center rounded-full bg-accent text-accent-foreground font-bold py-4 text-base shadow-xl shadow-accent/30"
       >
         Οδηγίες
       </a>
@@ -73,8 +84,8 @@ export default async function VenuePage({
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-4">
-      <dt className="text-neutral-500">{label}</dt>
-      <dd className="text-neutral-200 text-right">{value}</dd>
+      <dt className="text-muted">{label}</dt>
+      <dd className="text-foreground text-right font-medium">{value}</dd>
     </div>
   );
 }

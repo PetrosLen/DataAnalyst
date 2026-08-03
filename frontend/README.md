@@ -28,12 +28,15 @@ npm run dev
   confidence, "Δες γιατί προτάθηκε" (score breakdown), refine buttons ("πιο ήσυχα" → προσθέτει
   tag `quiet` και ξανακάνει search· "πιο οικονομικά" → μειώνει το budget cap· "πιο κοντινά" →
   client-side re-sort, χωρίς νέο API call).
-- `/venue/[slug]` — Server component, καλεί `GET /venues/{slug}`, δείχνει στοιχεία venue + κουμπί
-  "Οδηγίες" (deep link σε Google Maps βάσει διεύθυνσης) + `FeedbackWidget` (👍/👎 + "κάτι δεν είναι
-  σωστό" → έκλεισε/λάθος στοιχεία, καλεί `POST /feedback`).
+- `/venue/[slug]` — Server component, καλεί `GET /venues/{slug}`, δείχνει hero photo (αν υπάρχει
+  εγκεκριμένη — αλλιώς playful placeholder), στοιχεία venue + κουμπί "Οδηγίες" (deep link σε Google
+  Maps βάσει διεύθυνσης) + `FeedbackWidget` (👍/👎 + "κάτι δεν είναι σωστό" → έκλεισε/λάθος
+  στοιχεία, καλεί `POST /feedback`).
 - `/admin` — Login (HTTP Basic credentials, αποθηκευμένα σε `sessionStorage`, όχι localStorage) +
-  venue review queue με tabs ανά status, inline edit ανά venue (όλα τα πεδία + tags/sources για
-  context) και κουμπί "Έγκριση τώρα". Χρειάζεται admin user (βλ. backend README,
+  venue review queue με tabs ανά status, inline edit ανά venue (όλα τα πεδία + tags/sources/photos
+  για context) και κουμπί "Έγκριση τώρα". Κάθε φωτογραφία δείχνει ξεχωριστό status "⚠ Χρειάζεται
+  επιβεβαίωση άδειας" / "✓ Εγκεκριμένη άδεια" με δικό της toggle — μια φωτογραφία **δεν** γίνεται
+  ποτέ public μόνη της απλά επειδή προστέθηκε στη βάση. Χρειάζεται admin user (βλ. backend README,
   `create_admin_user` script).
 
 ## Σημαντικό: μόνο `status="active"` venues εμφανίζονται στο public app
@@ -60,3 +63,18 @@ sandboxed δίκτυο και μπλοκάρει το React hydration, οπότ�
   στο tab "active", και επιβεβαιώθηκε ότι εμφανίζεται μετά στο πραγματικό `/search`
 - Feedback: venue detail → click "👍 Ναι" → "Ευχαριστούμε" confirmation, επιβεβαιώθηκε η εγγραφή
   στη βάση και ότι εμφανίζεται στο `feedback_counts` του admin detail
+- Photos: venue χωρίς εγκεκριμένη φωτογραφία → placeholder· admin εγκρίνει το license → η ίδια
+  σελίδα δείχνει πλέον την πραγματική φωτογραφία (επιβεβαιώθηκε το πραγματικό `<img src>` με σωστό
+  URL). Σημείωση: μέσα σε αυτό το sandboxed dev container το headless Chromium του Playwright δεν
+  έχει πρόσβαση στο δημόσιο internet χωρίς να περάσει από το proxy εξόδου του container, οπότε το
+  screenshot εκεί έδειχνε "σπασμένη εικόνα" — επιβεβαιώθηκε ξεχωριστά με πραγματικό HTTP request
+  (browser-like headers) ότι η εικόνα φορτώνει κανονικά (200, image/jpeg, ~118KB). Σε πραγματικό
+  browser χρήστη ή production deployment δεν υπάρχει τέτοιος περιορισμός.
+
+## Design
+
+Παλέτα: λευκό background, κείμενο σχεδόν-μαύρο, accent hot-pink (`#FF3E7F`) + κίτρινο (`#FFC93C`)
+για δεύτερης τάξης highlights/badges. Ορίζεται κεντρικά σε `app/globals.css` (`--background`,
+`--foreground`, `--accent`, `--accent-2`, `--muted`, `--border`, `--card`, `--success`, `--danger`)
+και εκτίθεται ως Tailwind utilities (`bg-accent`, `text-muted`, κ.λπ.) — άλλαξε τα εκεί, όχι
+σκόρπιες τιμές μέσα στα components.

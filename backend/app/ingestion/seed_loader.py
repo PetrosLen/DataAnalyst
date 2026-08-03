@@ -15,7 +15,17 @@ import yaml
 from geoalchemy2.elements import WKTElement
 from sqlalchemy.orm import Session
 
-from app.db.models import Category, CityArea, Tag, Venue, VenueCategory, VenueHours, VenueSource, VenueTag
+from app.db.models import (
+    Category,
+    CityArea,
+    Tag,
+    Venue,
+    VenueCategory,
+    VenueHours,
+    VenueMedia,
+    VenueSource,
+    VenueTag,
+)
 from app.db.session import SessionLocal
 
 SEED_DATA_DIR = Path(__file__).parent / "seed_data"
@@ -59,6 +69,35 @@ def _parse_time(value: str | None) -> time | None:
     return time(int(hour), int(minute))
 
 
+def _sync_photos(
+    db: Session, venue: Venue, photos: list[dict], source_id: int | None = None
+) -> None:
+    """Adds any photo URLs from the YAML not already present for this venue.
+    license_ok always starts False, regardless of the source — even a photo
+    from the venue's own official site needs explicit admin confirmation
+    before GET /venues/{slug} will ever return it."""
+    if not photos:
+        return
+    existing_urls = {
+        url for (url,) in db.query(VenueMedia.url).filter(VenueMedia.venue_id == venue.id)
+    }
+    next_sort_order = len(existing_urls)
+    for photo in photos:
+        if photo["url"] in existing_urls:
+            continue
+        db.add(
+            VenueMedia(
+                venue_id=venue.id,
+                url=photo["url"],
+                media_type="photo",
+                source_id=source_id,
+                license_ok=False,
+                sort_order=next_sort_order,
+            )
+        )
+        next_sort_order += 1
+
+
 def load_file(db: Session, path: Path) -> dict[str, int]:
     data: dict[str, Any] = yaml.safe_load(path.read_text())
     stats = {"created": 0, "skipped": 0}
@@ -80,8 +119,10 @@ def load_file(db: Session, path: Path) -> dict[str, int]:
     db.flush()
 
     for v in data.get("venues", []):
-        if db.query(Venue).filter_by(slug=v["slug"]).first():
+        existing = db.query(Venue).filter_by(slug=v["slug"]).first()
+        if existing:
             stats["skipped"] += 1
+            _sync_photos(db, existing, v.get("photos", []))
             continue
 
         city_area = db.query(CityArea).filter_by(slug=v["city_area_slug"]).first()
@@ -150,6 +191,8 @@ def load_file(db: Session, path: Path) -> dict[str, int]:
                     source_id=source.id,
                 )
             )
+
+        _sync_photos(db, venue, v.get("photos", []), source_id=source.id)
 
         stats["created"] += 1
 

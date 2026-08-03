@@ -9,6 +9,7 @@ from app.db.models.user_feedback import UserFeedback
 from app.db.models.venue import Venue
 from app.db.models.venue_category import VenueCategory
 from app.db.models.venue_hours import VenueHours
+from app.db.models.venue_media import VenueMedia
 from app.db.models.venue_signal import VenueSignal
 from app.db.models.venue_source import VenueSource
 from app.db.models.venue_tag import VenueTag
@@ -25,6 +26,7 @@ __all__ = [
     "Venue",
     "VenueCategory",
     "VenueHours",
+    "VenueMedia",
     "VenueSignal",
     "VenueSource",
     "VenueTag",

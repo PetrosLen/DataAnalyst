@@ -87,6 +87,7 @@ export type VenueDetail = {
   primary_category_slug: string | null;
   overall_confidence: number;
   tags: VenueTag[];
+  photo_urls: string[];
 };
 
 export async function getVenue(slug: string): Promise<VenueDetail | null> {

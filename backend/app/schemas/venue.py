@@ -22,3 +22,4 @@ class VenueDetailOut(BaseModel):
     primary_category_slug: str | None
     overall_confidence: float
     tags: list[VenueTagOut]
+    photo_urls: list[str]

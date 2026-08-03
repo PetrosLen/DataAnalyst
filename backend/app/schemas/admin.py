@@ -22,6 +22,16 @@ class AdminVenueSourceOut(BaseModel):
     last_checked_at: datetime | None
 
 
+class AdminVenueMediaOut(BaseModel):
+    id: int
+    url: str
+    license_ok: bool
+
+
+class AdminVenueMediaUpdate(BaseModel):
+    license_ok: bool
+
+
 class AdminVenueListItem(BaseModel):
     id: int
     slug: str
@@ -50,6 +60,7 @@ class AdminVenueDetail(AdminVenueListItem):
     tags: list[AdminVenueTagOut]
     sources: list[AdminVenueSourceOut]
     feedback_counts: dict[str, int]
+    media: list[AdminVenueMediaOut]
 
 
 class AdminVenueUpdate(BaseModel):

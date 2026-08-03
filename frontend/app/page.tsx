@@ -47,28 +47,29 @@ export default function HomePage() {
   return (
     <main className="flex-1 flex flex-col mx-auto w-full max-w-md px-5 pt-10 pb-8 gap-8">
       <header className="text-center">
-        <h1 className="text-4xl font-bold tracking-tight">
+        <span className="inline-block rounded-full bg-accent-2 text-accent-2-foreground text-[11px] font-bold uppercase tracking-wide px-3 py-1 mb-3">
+          📍 Θεσσαλονίκη
+        </span>
+        <h1 className="text-5xl font-extrabold tracking-tight">
           Where to<span className="text-accent">?</span>
         </h1>
-        <p className="mt-2 text-neutral-400 text-sm">
-          Πες μας τι θέλεις τώρα στη Θεσσαλονίκη — θα σου δώσουμε κατευθείαν προτάσεις.
+        <p className="mt-2 text-muted text-sm">
+          Πες μας τι θέλεις τώρα — θα σου δώσουμε κατευθείαν προτάσεις. Χωρίς σκρολάρισμα.
         </p>
       </header>
 
       <section>
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-3">
-          Τι ψάχνεις
-        </h2>
+        <h2 className="text-xs font-bold uppercase tracking-wide text-muted mb-3">Τι ψάχνεις</h2>
         <div className="grid grid-cols-2 gap-2">
           {INTENTS.map((opt) => (
             <button
               key={opt.slug}
               type="button"
               onClick={() => setIntent(opt.slug)}
-              className={`rounded-xl px-3 py-3 text-sm font-medium transition-colors border ${
+              className={`rounded-2xl px-3 py-3 text-sm font-semibold transition-all border-2 ${
                 intent === opt.slug
-                  ? "bg-accent text-neutral-950 border-accent"
-                  : "bg-neutral-900 border-neutral-800 text-neutral-200 hover:border-neutral-600"
+                  ? "bg-accent text-accent-foreground border-accent shadow-lg shadow-accent/25 scale-[1.02]"
+                  : "bg-card border-border text-foreground hover:border-accent/50"
               }`}
             >
               <span className="mr-1.5">{opt.emoji}</span>
@@ -79,19 +80,17 @@ export default function HomePage() {
       </section>
 
       <section>
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-3">
-          Μετακίνηση
-        </h2>
+        <h2 className="text-xs font-bold uppercase tracking-wide text-muted mb-3">Μετακίνηση</h2>
         <div className="flex gap-2">
           {MOBILITY_OPTIONS.map((opt) => (
             <button
               key={opt.value}
               type="button"
               onClick={() => setMobility(opt.value)}
-              className={`flex-1 rounded-xl px-3 py-2 text-sm font-medium transition-colors border ${
+              className={`flex-1 rounded-2xl px-3 py-2 text-sm font-semibold transition-all border-2 ${
                 mobility === opt.value
-                  ? "bg-accent text-neutral-950 border-accent"
-                  : "bg-neutral-900 border-neutral-800 text-neutral-200 hover:border-neutral-600"
+                  ? "bg-accent text-accent-foreground border-accent shadow-lg shadow-accent/25"
+                  : "bg-card border-border text-foreground hover:border-accent/50"
               }`}
             >
               {opt.label}
@@ -101,7 +100,7 @@ export default function HomePage() {
       </section>
 
       <section>
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-3">
+        <h2 className="text-xs font-bold uppercase tracking-wide text-muted mb-3">
           Budget (μέχρι)
         </h2>
         <div className="flex gap-2">
@@ -110,10 +109,10 @@ export default function HomePage() {
               key={opt.value}
               type="button"
               onClick={() => setBudgetMax(opt.value)}
-              className={`flex-1 rounded-xl px-3 py-2 text-sm font-medium transition-colors border ${
+              className={`flex-1 rounded-2xl px-3 py-2 text-sm font-semibold transition-all border-2 ${
                 budgetMax === opt.value
-                  ? "bg-accent text-neutral-950 border-accent"
-                  : "bg-neutral-900 border-neutral-800 text-neutral-200 hover:border-neutral-600"
+                  ? "bg-accent-2 text-accent-2-foreground border-accent-2 shadow-lg shadow-accent-2/25"
+                  : "bg-card border-border text-foreground hover:border-accent-2/60"
               }`}
             >
               {opt.label}
@@ -126,20 +125,18 @@ export default function HomePage() {
         <button
           type="button"
           onClick={() => setQuietOnly((v) => !v)}
-          className={`w-full flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium border transition-colors ${
-            quietOnly
-              ? "bg-accent/10 border-accent text-accent"
-              : "bg-neutral-900 border-neutral-800 text-neutral-300"
+          className={`w-full flex items-center justify-between rounded-2xl px-4 py-3 text-sm font-semibold border-2 transition-all ${
+            quietOnly ? "bg-accent/10 border-accent text-accent" : "bg-card border-border text-foreground"
           }`}
         >
-          <span>Θέλω κάτι ήσυχο</span>
+          <span>🤫 Θέλω κάτι ήσυχο</span>
           <span
-            className={`h-5 w-9 rounded-full relative transition-colors ${
-              quietOnly ? "bg-accent" : "bg-neutral-700"
+            className={`h-6 w-10 rounded-full relative transition-colors ${
+              quietOnly ? "bg-accent" : "bg-border"
             }`}
           >
             <span
-              className={`absolute top-0.5 h-4 w-4 rounded-full bg-neutral-950 transition-transform ${
+              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
                 quietOnly ? "translate-x-4" : "translate-x-0.5"
               }`}
             />
@@ -151,9 +148,9 @@ export default function HomePage() {
         type="button"
         onClick={handleSubmit}
         disabled={locating}
-        className="mt-2 w-full rounded-2xl bg-accent text-neutral-950 font-semibold py-4 text-base disabled:opacity-60"
+        className="mt-2 w-full rounded-full bg-accent text-accent-foreground font-bold py-4 text-base shadow-xl shadow-accent/30 transition-transform active:scale-[0.98] disabled:opacity-60"
       >
-        {locating ? "Εντοπισμός τοποθεσίας…" : "Πού να πάω τώρα;"}
+        {locating ? "Εντοπισμός τοποθεσίας…" : "Πού να πάω τώρα; →"}
       </button>
     </main>
   );

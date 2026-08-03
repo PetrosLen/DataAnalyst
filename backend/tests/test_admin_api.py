@@ -1,7 +1,7 @@
 from geoalchemy2.elements import WKTElement
 
 from app.core.security import hash_password
-from app.db.models import AdminUser, ConfidenceAudit, UserFeedback, Venue
+from app.db.models import AdminUser, ConfidenceAudit, UserFeedback, Venue, VenueMedia
 
 ADMIN_EMAIL = "test-admin@whereto.local"
 ADMIN_PASSWORD = "correct-horse-battery-staple"
@@ -117,3 +117,61 @@ def test_admin_venue_detail_includes_feedback_counts(client, db_session):
     assert response.status_code == 200
     counts = response.json()["feedback_counts"]
     assert counts == {"thumbs_up": 2, "wrong_info": 1}
+
+
+def test_admin_venue_detail_includes_media_with_license_status(client, db_session):
+    _seed_admin(db_session)
+    venue = _seed_pending_venue(db_session)
+    media = VenueMedia(venue_id=venue.id, url="https://example.com/photo.jpg", license_ok=False)
+    db_session.add(media)
+    db_session.flush()
+
+    response = client.get(
+        f"/api/v1/admin/venues/{venue.id}", auth=(ADMIN_EMAIL, ADMIN_PASSWORD)
+    )
+    assert response.status_code == 200
+    media_out = response.json()["media"]
+    assert len(media_out) == 1
+    assert media_out[0]["url"] == "https://example.com/photo.jpg"
+    assert media_out[0]["license_ok"] is False
+
+
+def test_admin_can_approve_media_license_and_it_logs_audit(client, db_session):
+    _seed_admin(db_session)
+    venue = _seed_pending_venue(db_session)
+    media = VenueMedia(venue_id=venue.id, url="https://example.com/photo.jpg", license_ok=False)
+    db_session.add(media)
+    db_session.flush()
+
+    response = client.patch(
+        f"/api/v1/admin/venues/{venue.id}/media/{media.id}",
+        json={"license_ok": True},
+        auth=(ADMIN_EMAIL, ADMIN_PASSWORD),
+    )
+    assert response.status_code == 200
+    assert response.json()["media"][0]["license_ok"] is True
+
+    db_session.refresh(media)
+    assert media.license_ok is True
+
+    audit = (
+        db_session.query(ConfidenceAudit)
+        .filter_by(entity_type="venue_media", entity_id=media.id)
+        .one()
+    )
+    assert audit.field_name == "license_ok"
+    assert audit.old_value == "False"
+    assert audit.new_value == "True"
+    assert audit.changed_by == ADMIN_EMAIL
+
+
+def test_admin_media_update_unknown_media_returns_404(client, db_session):
+    _seed_admin(db_session)
+    venue = _seed_pending_venue(db_session)
+
+    response = client.patch(
+        f"/api/v1/admin/venues/{venue.id}/media/999999",
+        json={"license_ok": True},
+        auth=(ADMIN_EMAIL, ADMIN_PASSWORD),
+    )
+    assert response.status_code == 404

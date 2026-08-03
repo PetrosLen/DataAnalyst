@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.db.models import Category, Tag, Venue, VenueTag
+from app.db.models import Category, Tag, Venue, VenueMedia, VenueTag
 from app.db.session import get_db
 from app.schemas.venue import VenueDetailOut, VenueTagOut
 
@@ -26,6 +26,19 @@ def get_venue(slug: str, db: Session = Depends(get_db)) -> VenueDetailOut:
         .all()
     )
 
+    # Only license-cleared photos are ever shown publicly — an unreviewed
+    # photo staying invisible until an admin confirms it is the same "nothing
+    # goes live without human approval" rule the rest of the app follows.
+    photo_urls = [
+        url
+        for (url,) in (
+            db.query(VenueMedia.url)
+            .filter(VenueMedia.venue_id == venue.id, VenueMedia.license_ok.is_(True))
+            .order_by(VenueMedia.sort_order)
+            .all()
+        )
+    ]
+
     return VenueDetailOut(
         slug=venue.slug,
         name=venue.name,
@@ -39,4 +52,5 @@ def get_venue(slug: str, db: Session = Depends(get_db)) -> VenueDetailOut:
         primary_category_slug=primary_category_slug,
         overall_confidence=float(venue.overall_confidence),
         tags=[VenueTagOut(slug=s, name=n, confidence=float(c)) for s, n, c in tags],
+        photo_urls=photo_urls,
     )

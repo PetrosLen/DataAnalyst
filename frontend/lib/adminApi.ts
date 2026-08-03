@@ -28,6 +28,8 @@ export type AdminVenueSource = {
   last_checked_at: string | null;
 };
 
+export type AdminVenueMedia = { id: number; url: string; license_ok: boolean };
+
 export type AdminVenueDetail = AdminVenueListItem & {
   description_short: string | null;
   description_long: string | null;
@@ -39,6 +41,7 @@ export type AdminVenueDetail = AdminVenueListItem & {
   last_verified_at: string | null;
   tags: AdminVenueTag[];
   sources: AdminVenueSource[];
+  media: AdminVenueMedia[];
 };
 
 export type AdminVenueUpdate = Partial<{
@@ -103,6 +106,19 @@ export async function updateVenue(
   const res = await adminFetch(`/admin/venues/${id}`, creds, {
     method: "PATCH",
     body: JSON.stringify(update),
+  });
+  return res.json();
+}
+
+export async function updateVenueMediaLicense(
+  creds: AdminCredentials,
+  venueId: number,
+  mediaId: number,
+  licenseOk: boolean
+): Promise<AdminVenueDetail> {
+  const res = await adminFetch(`/admin/venues/${venueId}/media/${mediaId}`, creds, {
+    method: "PATCH",
+    body: JSON.stringify({ license_ok: licenseOk }),
   });
   return res.json();
 }

@@ -39,17 +39,18 @@ alembic upgrade head
 alembic downgrade -1
 ```
 
-## Τρέχον schema (migrations `0001`-`0004`)
+## Τρέχον schema (migrations `0001`-`0005`)
 
 Καλύπτει τα "core" tables του Week 1 (`city_areas`, `categories`, `tags`, `admin_users`, `venues`,
 `venue_categories`, `venue_sources`, `venue_hours`, `venue_tags`, `venue_signals`) plus
 `search_logs`/`recommendation_events` (Week 2, για το `/search` endpoint) plus `confidence_audits`
-(audit trail για admin edits) plus `user_feedback` (thumbs up/down κ.λπ.). Οι υπόλοιποι πίνακες
-του πλήρους schema (`sponsored_placements`, `content_pages`, `update_jobs`, `venue_media`,
-`venue_reviews_internal`, `user_submitted_corrections`, `duplicate_candidates`,
-`recommendation_engine_config`) θα προστεθούν σε επόμενα migrations καθώς χτίζεται το αντίστοιχο
-functionality (βλ. backlog στο `docs/where-to/PRODUCT_DESIGN.md` §20.F). Το πλήρες σχήμα-στόχος
-υπάρχει ήδη ως reference στο `docs/where-to/schema.sql`.
+(audit trail για admin edits) plus `user_feedback` (thumbs up/down κ.λπ.) plus `venue_media`
+(φωτογραφίες, βλ. §Photos παρακάτω). Οι υπόλοιποι πίνακες του πλήρους schema
+(`sponsored_placements`, `content_pages`, `update_jobs`, `venue_reviews_internal`,
+`user_submitted_corrections`, `duplicate_candidates`, `recommendation_engine_config`) θα
+προστεθούν σε επόμενα migrations καθώς χτίζεται το αντίστοιχο functionality (βλ. backlog στο
+`docs/where-to/PRODUCT_DESIGN.md` §20.F). Το πλήρες σχήμα-στόχος υπάρχει ήδη ως reference στο
+`docs/where-to/schema.sql`.
 
 ## Seed data
 
@@ -140,6 +141,33 @@ curl -u founder@example.com -X PATCH http://localhost:8000/api/v1/admin/venues/1
 Not built yet: venue creation via API (use the seed loader), tag/hours editing (still DB-direct),
 and the low-confidence/stale/duplicate queues from the design doc (`§11`) — those are just
 `GET /admin/venues` with different filters for now, no dedicated views.
+
+## Photos (`venue_media`)
+
+Every photo row starts with `license_ok=False`, no matter how it was sourced — `GET /venues/{slug}`
+(public) only ever returns `photo_urls` where `license_ok=True`. This is deliberate: it's the same
+"nothing goes live without a human confirming it" rule the rest of the app follows, applied to
+images specifically because of copyright risk (see `PATCH /admin/venues/{id}/media/{id}` below).
+
+**Sourcing status as of this batch:** only **1 of 10** seed venues (Orizontes Roof Garden) has a
+photo, sourced from its confirmed official website (`orizontesrestaurant.com`). For the other 9,
+no safe source was found — most small independent bars/cafes in the seed only have Instagram/
+Facebook presence, which isn't something this pipeline scrapes or hotlinks (against platform ToS,
+and URLs there aren't stable). One domain that looked like an official site
+(`vogatsikou3.gr`) turned out to be an **expired domain now repurposed as an unrelated online
+casino review site** — a reminder to verify page content before trusting a URL, not just that it
+resolves.
+
+**The real fix for full photo coverage is the Google Places API** (Place Photos), which requires a
+Google Cloud project + billing on the founder's own account — not something this pipeline can set
+up unilaterally. Once a `GOOGLE_PLACES_API_KEY` exists, an enrichment script can be added to
+`app/ingestion/enrichment/` to pull photos for every venue automatically (still landing as
+`license_ok=False` pending admin review, per the rule above).
+
+Admin workflow:
+- `GET /api/v1/admin/venues/{id}` → `media: [{id, url, license_ok}]`
+- `PATCH /api/v1/admin/venues/{id}/media/{media_id}` with `{"license_ok": true}` → makes a photo
+  public; logged to `confidence_audits` (`entity_type="venue_media"`) like any other edit.
 
 ## Tests
 

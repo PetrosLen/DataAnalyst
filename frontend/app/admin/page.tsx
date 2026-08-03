@@ -6,6 +6,7 @@ import {
   getVenue,
   listVenues,
   updateVenue,
+  updateVenueMediaLicense,
   verifyCredentials,
   type AdminVenueDetail,
   type AdminVenueListItem,
@@ -60,9 +61,7 @@ export default function AdminPage() {
 
 function Centered({ children }: { children: React.ReactNode }) {
   return (
-    <main className="flex-1 flex items-center justify-center text-neutral-400 text-sm">
-      {children}
-    </main>
+    <main className="flex-1 flex items-center justify-center text-muted text-sm">{children}</main>
   );
 }
 
@@ -91,16 +90,16 @@ function LoginForm({ onSuccess }: { onSuccess: (creds: AdminCredentials) => void
     <main className="flex-1 flex flex-col items-center justify-center px-5">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-xs flex flex-col gap-3 rounded-2xl border border-neutral-800 bg-neutral-900 p-6"
+        className="w-full max-w-xs flex flex-col gap-3 rounded-2xl border border-border bg-card shadow-sm p-6"
       >
-        <h1 className="text-lg font-semibold text-center mb-2">Where to? Admin</h1>
+        <h1 className="text-lg font-bold text-center mb-2">Where to? Admin</h1>
         <input
           type="email"
           required
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="rounded-lg bg-neutral-950 border border-neutral-700 px-3 py-2 text-sm outline-none focus:border-accent"
+          className="admin-input"
         />
         <input
           type="password"
@@ -108,13 +107,13 @@ function LoginForm({ onSuccess }: { onSuccess: (creds: AdminCredentials) => void
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="rounded-lg bg-neutral-950 border border-neutral-700 px-3 py-2 text-sm outline-none focus:border-accent"
+          className="admin-input"
         />
-        {error && <p className="text-xs text-red-400">{error}</p>}
+        {error && <p className="text-xs text-danger">{error}</p>}
         <button
           type="submit"
           disabled={loading}
-          className="rounded-lg bg-accent text-neutral-950 font-semibold py-2 text-sm disabled:opacity-60"
+          className="rounded-full bg-accent text-accent-foreground font-bold py-2 text-sm disabled:opacity-60"
         >
           {loading ? "…" : "Σύνδεση"}
         </button>
@@ -164,11 +163,11 @@ function VenueReviewQueue({
   return (
     <main className="flex-1 flex flex-col mx-auto w-full max-w-2xl px-5 pt-6 pb-10 gap-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">Venue review queue</h1>
+        <h1 className="text-lg font-bold">Venue review queue</h1>
         <button
           type="button"
           onClick={onLogout}
-          className="text-xs text-neutral-400 hover:text-neutral-200"
+          className="text-xs text-muted hover:text-accent font-medium"
         >
           Αποσύνδεση ({creds.email})
         </button>
@@ -180,10 +179,10 @@ function VenueReviewQueue({
             key={tab}
             type="button"
             onClick={() => setStatus(tab)}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium border ${
+            className={`rounded-full px-3 py-1.5 text-xs font-bold border-2 ${
               status === tab
-                ? "bg-accent text-neutral-950 border-accent"
-                : "border-neutral-700 text-neutral-300"
+                ? "bg-accent text-accent-foreground border-accent"
+                : "border-border bg-card text-foreground"
             }`}
           >
             {tab}
@@ -191,10 +190,10 @@ function VenueReviewQueue({
         ))}
       </div>
 
-      {loading && <p className="text-neutral-400 text-sm">Φόρτωση…</p>}
-      {error && <p className="text-red-400 text-sm">{error}</p>}
+      {loading && <p className="text-muted text-sm">Φόρτωση…</p>}
+      {error && <p className="text-danger text-sm">{error}</p>}
       {!loading && venues && (
-        <p className="text-xs text-neutral-500">{total} venues σε status=&quot;{status}&quot;</p>
+        <p className="text-xs text-muted">{total} venues σε status=&quot;{status}&quot;</p>
       )}
 
       <ul className="flex flex-col gap-2">
@@ -212,7 +211,7 @@ function VenueReviewQueue({
         ))}
       </ul>
       {!loading && venues && venues.length === 0 && (
-        <p className="text-neutral-500 text-sm">Καμία καταχώρηση σε αυτό το status.</p>
+        <p className="text-muted text-sm">Καμία καταχώρηση σε αυτό το status.</p>
       )}
     </main>
   );
@@ -234,15 +233,15 @@ function VenueRow({
   onSaved: () => void;
 }) {
   return (
-    <div className="rounded-xl border border-neutral-800 bg-neutral-900 overflow-hidden">
+    <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
       <button
         type="button"
         onClick={onToggle}
         className="w-full flex items-center justify-between px-4 py-3 text-left"
       >
         <div>
-          <p className="font-medium text-neutral-100">{venue.name}</p>
-          <p className="text-xs text-neutral-500">
+          <p className="font-bold text-foreground">{venue.name}</p>
+          <p className="text-xs text-muted">
             {venue.primary_category_slug ?? "—"} · {venue.city_area_slug ?? "—"} · conf{" "}
             {Math.round(venue.overall_confidence * 100)}%
           </p>
@@ -264,11 +263,13 @@ function VenueRow({
 function StatusBadge({ status }: { status: string }) {
   const color =
     status === "active"
-      ? "bg-emerald-400/20 text-emerald-400"
+      ? "bg-success/15 text-success"
       : status === "pending"
-        ? "bg-amber-400/20 text-amber-400"
-        : "bg-neutral-700 text-neutral-300";
-  return <span className={`rounded-full px-2 py-1 text-[10px] font-medium ${color}`}>{status}</span>;
+        ? "bg-accent-2/30 text-accent-2-foreground"
+        : "bg-border text-muted";
+  return (
+    <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${color}`}>{status}</span>
+  );
 }
 
 function VenueEditPanel({
@@ -349,33 +350,81 @@ function VenueEditPanel({
     }
   }
 
+  async function toggleMediaLicense(mediaId: number, nextValue: boolean) {
+    try {
+      const updated = await updateVenueMediaLicense(creds, venueId, mediaId, nextValue);
+      setDetail(updated);
+    } catch (err) {
+      if (err instanceof AdminAuthError) onAuthError();
+    }
+  }
+
   if (loading) {
-    return <p className="px-4 pb-4 text-xs text-neutral-500">Φόρτωση στοιχείων…</p>;
+    return <p className="px-4 pb-4 text-xs text-muted">Φόρτωση στοιχείων…</p>;
   }
   if (!detail) {
-    return <p className="px-4 pb-4 text-xs text-red-400">Σφάλμα φόρτωσης.</p>;
+    return <p className="px-4 pb-4 text-xs text-danger">Σφάλμα φόρτωσης.</p>;
   }
 
   return (
-    <div className="border-t border-neutral-800 px-4 py-4 flex flex-col gap-3">
+    <div className="border-t border-border px-4 py-4 flex flex-col gap-3">
       <div className="flex flex-wrap gap-1.5">
         {detail.tags.map((t) => (
           <span
             key={t.slug}
-            className="text-[10px] rounded-full border border-neutral-700 px-2 py-0.5 text-neutral-400"
+            className="text-[10px] font-medium rounded-full border border-border px-2 py-0.5 text-muted"
           >
             {t.name} ({Math.round(t.confidence * 100)}%)
           </span>
         ))}
       </div>
 
-      <div className="text-[11px] text-neutral-500 flex flex-col gap-0.5">
+      <div className="text-[11px] text-muted flex flex-col gap-0.5">
         {detail.sources.map((s) => (
           <span key={s.id}>
             πηγή: {s.source_type} · reliability {Math.round(s.reliability_score * 100)}%
           </span>
         ))}
       </div>
+
+      {detail.media.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <p className="text-xs font-semibold text-muted">
+            Φωτογραφίες ({detail.media.length})
+          </p>
+          <div className="flex flex-col gap-2">
+            {detail.media.map((m) => (
+              <div key={m.id} className="flex items-center gap-2">
+                {/* eslint-disable-next-line @next/next/no-img-element -- external, unpredictable domains */}
+                <img
+                  src={m.url}
+                  alt=""
+                  className="h-14 w-14 rounded-xl object-cover border border-border shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] text-muted truncate">{m.url}</p>
+                  <p
+                    className={`text-[10px] font-bold ${m.license_ok ? "text-success" : "text-danger"}`}
+                  >
+                    {m.license_ok ? "✓ Εγκεκριμένη άδεια" : "⚠ Χρειάζεται επιβεβαίωση άδειας"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => toggleMediaLicense(m.id, !m.license_ok)}
+                  className={`shrink-0 text-[10px] font-bold rounded-full border-2 px-2.5 py-1 ${
+                    m.license_ok
+                      ? "border-border text-muted"
+                      : "border-success text-success"
+                  }`}
+                >
+                  {m.license_ok ? "Απόκρυψη" : "Έγκριση"}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <Field label="Όνομα">
         <input
@@ -457,7 +506,7 @@ function VenueEditPanel({
           type="button"
           onClick={save}
           disabled={saving}
-          className="flex-1 rounded-lg bg-accent text-neutral-950 font-semibold py-2 text-sm disabled:opacity-60"
+          className="flex-1 rounded-full bg-accent text-accent-foreground font-bold py-2 text-sm disabled:opacity-60"
         >
           Αποθήκευση
         </button>
@@ -466,20 +515,20 @@ function VenueEditPanel({
             type="button"
             onClick={approveNow}
             disabled={saving}
-            className="flex-1 rounded-lg border border-emerald-400 text-emerald-400 font-semibold py-2 text-sm disabled:opacity-60"
+            className="flex-1 rounded-full border-2 border-success text-success font-bold py-2 text-sm disabled:opacity-60"
           >
             Έγκριση τώρα
           </button>
         )}
       </div>
-      {message && <p className="text-xs text-neutral-400">{message}</p>}
+      {message && <p className="text-xs text-muted">{message}</p>}
     </div>
   );
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="flex flex-col gap-1 text-xs text-neutral-400">
+    <label className="flex flex-col gap-1 text-xs font-medium text-muted">
       {label}
       {children}
     </label>
