@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import GenderThemeInit from "@/components/GenderThemeInit";
 
 export const metadata: Metadata = {
   title: "Where to?",
@@ -14,6 +15,7 @@ export default function RootLayout({
   return (
     <html lang="el" className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-background text-foreground">
+        <GenderThemeInit />
         {children}
       </body>
     </html>

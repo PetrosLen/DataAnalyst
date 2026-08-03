@@ -101,6 +101,21 @@ curl -s -X POST http://localhost:8000/api/v1/search \
 
 Only `status="active"` venues are ever returned. Venue detail: `GET /api/v1/venues/{slug}`.
 
+### Audience preference (`preferred_audience`)
+
+Optional field on `SearchRequest`: `"male"`, `"female"`, or `"other"` (the frontend sends whatever
+the user picked in its gender/theme gate — see frontend README). It resolves to the `tags` table's
+`male-friendly` / `female-friendly` slug (tag_type `audience`) and, **only if a venue actually has
+that tag**, adds a small confidence-weighted nudge (`+0.08 * tag_confidence`, folded into the
+existing `context` score component) — never a filter, never enough to override intent/distance/
+budget. `"other"` (or omitting the field) has zero effect.
+
+**Important: neither tag is currently assigned to any of the 10 seed venues**, so today this is
+pure plumbing with no visible effect on results. Deciding whether a specific real bar/cafe skews
+toward one audience is a subjective call that needs a human (the founder's judgment, or real usage
+data over time) — not something to guess from a venue's name or category. Assigning these tags is
+still DB-direct for now (no admin UI for tag editing yet, same gap as venue_hours/other tags).
+
 ## Feedback (`POST /feedback`)
 
 Public, no auth. Logs a `user_feedback` row (`thumbs_up` / `thumbs_down` / `closed` /

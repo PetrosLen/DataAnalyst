@@ -6,12 +6,37 @@
   --muted: #7a7486;
   --card: #ffffff;
   --border: #efe8ee;
+  --success: #12b76a;
+  --danger: #f04438;
+
+  /* Neutral palette (default, before a gender/theme preference is chosen,
+     and for "other") — violet + teal. Kept distinct from both the
+     "male" and "female" palettes below so it doesn't presuppose either. */
+  --accent: #7c3aed;
+  --accent-foreground: #ffffff;
+  --accent-2: #2dd4bf;
+  --accent-2-foreground: #0f2e2b;
+}
+
+[data-gender="female"] {
   --accent: #ff3e7f;
   --accent-foreground: #ffffff;
   --accent-2: #ffc93c;
   --accent-2-foreground: #1a1523;
-  --success: #12b76a;
-  --danger: #f04438;
+}
+
+[data-gender="male"] {
+  --accent: #2563eb;
+  --accent-foreground: #ffffff;
+  --accent-2: #fb923c;
+  --accent-2-foreground: #1a1523;
+}
+
+[data-gender="other"] {
+  --accent: #7c3aed;
+  --accent-foreground: #ffffff;
+  --accent-2: #2dd4bf;
+  --accent-2-foreground: #0f2e2b;
 }
 
 @theme inline {

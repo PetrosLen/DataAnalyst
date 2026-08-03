@@ -41,6 +41,14 @@ class SearchContext:
     requested_tag_ids: set[int]
     search_time: datetime
     vibe_weight_override: float | None = None
+    # Resolved from the "male-friendly" / "female-friendly" audience tag
+    # slugs (see docs/where-to/PRODUCT_DESIGN.md §7's context-modifier
+    # extension point) — None until an admin actually tags a venue that
+    # way, so this is a no-op for the whole current seed batch. Deliberately
+    # NOT wired into vibe_match_score: that formula treats "no venues have
+    # this tag" as a penalty on every candidate, which would be wrong for a
+    # soft, optional nudge like this.
+    audience_tag_id: int | None = None
 
 
 @dataclass
@@ -100,8 +108,9 @@ def vibe_match_score(venue: CandidateVenue, ctx: SearchContext) -> float:
 
 
 def context_modifier_score(venue: CandidateVenue, ctx: SearchContext) -> float:
-    """Small, concrete time-of-day nudges. Extend here as more signals
-    (weather, day-of-week) become available — not a stand-in stub."""
+    """Small, concrete nudges: time-of-day, and (optionally) an audience-fit
+    signal. Extend here as more signals (weather, day-of-week) become
+    available — not a stand-in stub."""
     hour = ctx.search_time.hour
     is_late = hour >= 21 or hour < 3
     is_daytime = 8 <= hour <= 17
@@ -111,6 +120,11 @@ def context_modifier_score(venue: CandidateVenue, ctx: SearchContext) -> float:
         score += 0.1
     if is_daytime and "cafe" in venue.category_slugs:
         score += 0.05
+
+    if ctx.audience_tag_id is not None:
+        audience_confidence = venue.tag_confidences.get(ctx.audience_tag_id, 0.0)
+        score += 0.08 * audience_confidence  # small, confidence-weighted nudge — never a filter
+
     return score
 
 

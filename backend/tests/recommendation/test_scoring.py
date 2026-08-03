@@ -158,3 +158,37 @@ def test_compute_score_confidence_multiplier_penalizes_low_confidence():
     assert high.confidence_multiplier == 1.0
     assert low.confidence_multiplier == 0.5
     assert high.total > low.total
+
+
+def test_context_modifier_no_audience_preference_is_unaffected():
+    v = make_venue(category_slugs=set(), tag_confidences={42: 0.9})
+    ctx = make_ctx(audience_tag_id=None)
+    assert context_modifier_score(v, ctx) == 0.0
+
+
+def test_context_modifier_audience_match_gives_small_boost():
+    v = make_venue(category_slugs=set(), tag_confidences={42: 1.0})
+    ctx = make_ctx(audience_tag_id=42)
+    assert context_modifier_score(v, ctx) == pytest.approx(0.08)
+
+
+def test_context_modifier_audience_no_tag_on_venue_is_neutral():
+    # Venue simply isn't tagged either way — not penalized, just no boost.
+    v = make_venue(category_slugs=set(), tag_confidences={})
+    ctx = make_ctx(audience_tag_id=42)
+    assert context_modifier_score(v, ctx) == 0.0
+
+
+def test_context_modifier_audience_boost_is_confidence_weighted():
+    v = make_venue(category_slugs=set(), tag_confidences={42: 0.5})
+    ctx = make_ctx(audience_tag_id=42)
+    assert context_modifier_score(v, ctx) == pytest.approx(0.04)
+
+
+def test_audience_nudge_never_overrides_vibe_match_denominator():
+    # Regression guard for the exact bug this design avoids: an audience
+    # preference must not make vibe_match_score worse just because no venue
+    # has the audience tag yet.
+    v = make_venue(tag_confidences={1: 0.9})  # has an unrelated "quiet"-style tag
+    ctx = make_ctx(requested_tag_ids={1}, audience_tag_id=42)
+    assert vibe_match_score(v, ctx) == pytest.approx(0.9)

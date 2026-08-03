@@ -32,6 +32,7 @@ class RecommendationRequest:
     requested_tag_ids: set[int]
     search_time: datetime
     limit: int = 8
+    audience_tag_id: int | None = None
 
 
 @dataclass
@@ -68,6 +69,7 @@ def get_recommendations(db: Session, req: RecommendationRequest) -> Recommendati
         requested_tag_ids=req.requested_tag_ids,
         search_time=req.search_time,
         vibe_weight_override=0.1 if relax_level >= MAX_RELAX_ATTEMPTS else None,
+        audience_tag_id=req.audience_tag_id,
     )
     scored = [(c, compute_score(c, ctx)) for c in candidates]
     diversified = diversify(scored, limit=req.limit)

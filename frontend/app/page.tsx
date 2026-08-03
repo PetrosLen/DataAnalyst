@@ -1,11 +1,80 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BUDGET_OPTIONS, DEFAULT_LOCATION, INTENTS, MOBILITY_OPTIONS } from "@/lib/constants";
 import type { Mobility } from "@/lib/api";
+import {
+  clearGenderPreference,
+  getStoredGenderPreference,
+  storeGenderPreference,
+  type GenderPreference,
+} from "@/lib/genderTheme";
+
+const GENDER_OPTIONS: { value: GenderPreference; label: string; emoji: string }[] = [
+  { value: "male", label: "Άντρας", emoji: "👨" },
+  { value: "female", label: "Γυναίκα", emoji: "👩" },
+  { value: "other", label: "Άλλο / Προτιμώ να μην πω", emoji: "🌈" },
+];
 
 export default function HomePage() {
+  const [genderPref, setGenderPref] = useState<GenderPreference | null>(null);
+  const [checkedStorage, setCheckedStorage] = useState(false);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time read on mount
+    setGenderPref(getStoredGenderPreference());
+    setCheckedStorage(true);
+  }, []);
+
+  if (!checkedStorage) {
+    return <main className="flex-1" />;
+  }
+
+  if (!genderPref) {
+    return <GenderGate onSelect={setGenderPref} />;
+  }
+
+  return <HomeFilters onChangeProfile={() => setGenderPref(null)} />;
+}
+
+function GenderGate({ onSelect }: { onSelect: (pref: GenderPreference) => void }) {
+  function choose(pref: GenderPreference) {
+    storeGenderPreference(pref);
+    onSelect(pref);
+  }
+
+  return (
+    <main className="flex-1 flex flex-col items-center justify-center mx-auto w-full max-w-md px-5 gap-8 text-center">
+      <div>
+        <h1 className="text-4xl font-extrabold tracking-tight">
+          Where to<span className="text-accent">?</span>
+        </h1>
+        <p className="mt-3 text-foreground font-semibold">Ποιο σου ταιριάζει;</p>
+        <p className="mt-1 text-xs text-muted">
+          Το χρησιμοποιούμε μόνο για τα χρώματα της εφαρμογής και για λίγο πιο ταιριαστές
+          προτάσεις. Ποτέ δεν το μοιραζόμαστε.
+        </p>
+      </div>
+
+      <div className="w-full flex flex-col gap-3">
+        {GENDER_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => choose(opt.value)}
+            className="w-full rounded-2xl border-2 border-border bg-card px-4 py-4 text-base font-bold text-foreground hover:border-accent hover:text-accent transition-all flex items-center justify-center gap-2"
+          >
+            <span className="text-xl">{opt.emoji}</span>
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </main>
+  );
+}
+
+function HomeFilters({ onChangeProfile }: { onChangeProfile: () => void }) {
   const router = useRouter();
   const [intent, setIntent] = useState<string>(INTENTS[0].slug);
   const [mobility, setMobility] = useState<Mobility>("walk");
@@ -42,6 +111,11 @@ export default function HomePage() {
       },
       { timeout: 5000 }
     );
+  }
+
+  function changeProfile() {
+    clearGenderPreference();
+    onChangeProfile();
   }
 
   return (
@@ -151,6 +225,14 @@ export default function HomePage() {
         className="mt-2 w-full rounded-full bg-accent text-accent-foreground font-bold py-4 text-base shadow-xl shadow-accent/30 transition-transform active:scale-[0.98] disabled:opacity-60"
       >
         {locating ? "Εντοπισμός τοποθεσίας…" : "Πού να πάω τώρα; →"}
+      </button>
+
+      <button
+        type="button"
+        onClick={changeProfile}
+        className="text-xs text-muted hover:text-accent font-medium"
+      >
+        Άλλαξε προφίλ χρωμάτων
       </button>
     </main>
   );

@@ -44,6 +44,7 @@ export type SearchRequestBody = {
   budget_max_level?: number | null;
   preferred_tag_slugs?: string[];
   limit?: number;
+  preferred_audience?: "male" | "female" | "other";
 };
 
 export class ApiError extends Error {

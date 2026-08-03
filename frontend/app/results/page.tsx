@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ApiError, search, type Mobility, type VenueRecommendation } from "@/lib/api";
 import { getSessionId } from "@/lib/session";
+import { getStoredGenderPreference } from "@/lib/genderTheme";
 import { INTENTS } from "@/lib/constants";
 
 const OPEN_STATUS_LABEL: Record<string, string> = {
@@ -71,6 +72,7 @@ function ResultsContent() {
       mobility,
       budget_max_level: budgetMax,
       preferred_tag_slugs: tags,
+      preferred_audience: getStoredGenderPreference() ?? "other",
     })
       .then((res) => {
         if (cancelled) return;

@@ -21,9 +21,11 @@ npm run dev
 
 ## Pages
 
-- `/` — Home: επιλογή intent (bar/cafe/restaurant/wine_bar), μετακίνηση, budget, "θέλω κάτι ήσυχο"
-  toggle. Ζητά geolocation, με fallback σε default τοποθεσία (Πλατεία Αριστοτέλους) αν αρνηθεί ο
-  χρήστης ή δεν υποστηρίζεται.
+- `/` — Πρώτη επίσκεψη: "Ποιο σου ταιριάζει;" (Άντρας/Γυναίκα/Άλλο, με ρητή διαφάνεια στο σκοπό —
+  βλ. §Gender theme παρακάτω), αποθηκεύεται στο `localStorage`. Μετά: Home filters — επιλογή intent
+  (bar/cafe/restaurant/wine_bar), μετακίνηση, budget, "θέλω κάτι ήσυχο" toggle, "Άλλαξε προφίλ
+  χρωμάτων" link. Ζητά geolocation, με fallback σε default τοποθεσία (Πλατεία Αριστοτέλους) αν
+  αρνηθεί ο χρήστης ή δεν υποστηρίζεται.
 - `/results` — Καλεί `POST /search`, δείχνει ranked κάρτες με score/distance/open-now/budget/
   confidence, "Δες γιατί προτάθηκε" (score breakdown), refine buttons ("πιο ήσυχα" → προσθέτει
   tag `quiet` και ξανακάνει search· "πιο οικονομικά" → μειώνει το budget cap· "πιο κοντινά" →
@@ -73,8 +75,27 @@ sandboxed δίκτυο και μπλοκάρει το React hydration, οπότ�
 
 ## Design
 
-Παλέτα: λευκό background, κείμενο σχεδόν-μαύρο, accent hot-pink (`#FF3E7F`) + κίτρινο (`#FFC93C`)
-για δεύτερης τάξης highlights/badges. Ορίζεται κεντρικά σε `app/globals.css` (`--background`,
-`--foreground`, `--accent`, `--accent-2`, `--muted`, `--border`, `--card`, `--success`, `--danger`)
-και εκτίθεται ως Tailwind utilities (`bg-accent`, `text-muted`, κ.λπ.) — άλλαξε τα εκεί, όχι
-σκόρπιες τιμές μέσα στα components.
+Λευκό background, κείμενο σχεδόν-μαύρο. Χρώματα ορίζονται κεντρικά σε `app/globals.css`
+(`--background`, `--foreground`, `--accent`, `--accent-2`, `--muted`, `--border`, `--card`,
+`--success`, `--danger`) και εκτίθενται ως Tailwind utilities (`bg-accent`, `text-muted`, κ.λπ.) —
+άλλαξε τα εκεί, όχι σκόρπιες τιμές μέσα στα components.
+
+## Gender theme (`lib/genderTheme.ts`)
+
+Στην πρώτη επίσκεψη το app ρωτάει "Ποιο σου ταιριάζει;" (Άντρας/Γυναίκα/Άλλο), με ρητή εξήγηση ότι
+χρησιμοποιείται μόνο για χρώματα + ελαφρώς πιο ταιριαστές προτάσεις, ποτέ δεν μοιράζεται. Η επιλογή
+μπαίνει σε `localStorage` (`whereto_gender_preference`) και εφαρμόζεται ως `<html data-gender="…">`
+από το `GenderThemeInit` component (τρέχει σε κάθε σελίδα). Τρεις παλέτες σε `app/globals.css`:
+
+| `data-gender` | accent | accent-2 | Πότε |
+|---|---|---|---|
+| _(κανένα/"other")_ | μωβ `#7C3AED` | τιρκουάζ `#2DD4BF` | Πριν επιλέξει κανείς· και ρητά αν διαλέξει "Άλλο" |
+| `female` | pink `#FF3E7F` | κίτρινο `#FFC93C` | |
+| `male` | μπλε `#2563EB` | πορτοκαλί `#FB923C` | |
+
+Το `/admin` (`app/admin/layout.tsx`) **πάντα** μένει στην ουδέτερη παλέτα (`data-gender="other"`
+σε wrapper `<div>`), ανεξάρτητα από ό,τι είναι αποθηκευμένο στο ίδιο browser — είναι το εργαλείο
+του ιδιοκτήτη, όχι το gendered public app.
+
+Η προτίμηση περνάει και στο backend ως `preferred_audience` στο `POST /search` — βλ. backend
+README §"Audience preference" για το πώς (και γιατί ΔΕΝ) επηρεάζει τα αποτελέσματα ακόμα.

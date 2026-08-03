@@ -69,6 +69,19 @@ tags:
   - slug: couple-friendly
     name: Ιδανικό για ζευγάρια
     tag_type: audience
+  # "male-friendly"/"female-friendly": dictionary entries only, deliberately
+  # NOT assigned to any venue below. Whether a real bar/cafe skews toward one
+  # audience is a subjective call — it needs a human (the founder, or real
+  # usage data over time), not an AI guessing from a name and a category.
+  # They exist so the /search "preferred_audience" soft-nudge (see
+  # recommendation/scoring.py) has something to match against once someone
+  # decides to tag specific venues.
+  - slug: male-friendly
+    name: Male-friendly
+    tag_type: audience
+  - slug: female-friendly
+    name: Female-friendly
+    tag_type: audience
 
 venues:
   - slug: vogatsikou-3

@@ -17,6 +17,9 @@ class SearchRequest(BaseModel):
     preferred_tag_slugs: list[str] = Field(default_factory=list)
     search_time: datetime | None = None
     limit: int = Field(default=8, ge=1, le=10)
+    # Optional, purely a soft ranking nudge (see recommendation/scoring.py's
+    # context_modifier_score) — never a filter. "other"/omitted = no effect.
+    preferred_audience: Literal["male", "female", "other"] | None = None
 
 
 class ScoreBreakdownOut(BaseModel):

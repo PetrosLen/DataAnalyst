@@ -32,6 +32,12 @@ def search(payload: SearchRequest, db: Session = Depends(get_db)) -> SearchRespo
         tags = db.query(Tag).filter(Tag.slug.in_(payload.preferred_tag_slugs)).all()
         requested_tag_ids = {t.id for t in tags}
 
+    audience_tag_id: int | None = None
+    if payload.preferred_audience in ("male", "female"):
+        audience_tag_slug = f"{payload.preferred_audience}-friendly"
+        audience_tag = db.query(Tag).filter_by(slug=audience_tag_slug).first()
+        audience_tag_id = audience_tag.id if audience_tag else None
+
     search_time = payload.search_time or datetime.now(timezone.utc)
 
     result = get_recommendations(
@@ -46,6 +52,7 @@ def search(payload: SearchRequest, db: Session = Depends(get_db)) -> SearchRespo
             requested_tag_ids=requested_tag_ids,
             search_time=search_time,
             limit=payload.limit,
+            audience_tag_id=audience_tag_id,
         ),
     )
 
