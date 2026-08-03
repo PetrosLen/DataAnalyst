@@ -372,9 +372,10 @@ function VenueEditPanel({
         {detail.tags.map((t) => (
           <span
             key={t.slug}
+            title={assignedByLabel(t.assigned_by)}
             className="text-[10px] font-medium rounded-full border border-border px-2 py-0.5 text-muted"
           >
-            {t.name} ({Math.round(t.confidence * 100)}%)
+            {assignedByIcon(t.assigned_by)} {t.name} ({Math.round(t.confidence * 100)}%)
           </span>
         ))}
       </div>
@@ -533,4 +534,18 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       {children}
     </label>
   );
+}
+
+function assignedByIcon(assignedBy: string): string {
+  if (assignedBy === "admin") return "👤";
+  if (assignedBy === "claude_suggested") return "✨";
+  if (assignedBy === "user_feedback") return "📊";
+  return "•";
+}
+
+function assignedByLabel(assignedBy: string): string {
+  if (assignedBy === "admin") return "Χειροκίνητα από admin";
+  if (assignedBy === "claude_suggested") return "Πρόταση Claude — χρειάζεται review";
+  if (assignedBy === "user_feedback") return "Προέκυψε από πραγματικό feedback χρηστών";
+  return assignedBy;
 }

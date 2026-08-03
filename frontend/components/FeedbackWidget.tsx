@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { submitFeedback, type FeedbackType } from "@/lib/api";
 import { getSessionId } from "@/lib/session";
+import { getStoredGenderPreference } from "@/lib/genderTheme";
 
 export default function FeedbackWidget({ venueSlug }: { venueSlug: string }) {
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">("idle");
@@ -11,7 +12,12 @@ export default function FeedbackWidget({ venueSlug }: { venueSlug: string }) {
   async function send(feedbackType: FeedbackType) {
     setStatus("sending");
     try {
-      await submitFeedback({ sessionId: getSessionId(), venueSlug, feedbackType });
+      await submitFeedback({
+        sessionId: getSessionId(),
+        venueSlug,
+        feedbackType,
+        audience: getStoredGenderPreference() ?? "other",
+      });
       setStatus("done");
     } catch {
       setStatus("error");

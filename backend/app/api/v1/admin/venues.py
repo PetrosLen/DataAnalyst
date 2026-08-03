@@ -91,7 +91,7 @@ def _to_detail(db: Session, venue: Venue) -> AdminVenueDetail:
     categories, city_areas = _slug_maps(db, [venue.id])
 
     tags = (
-        db.query(Tag.slug, Tag.name, VenueTag.confidence)
+        db.query(Tag.slug, Tag.name, VenueTag.confidence, VenueTag.assigned_by)
         .join(VenueTag, VenueTag.tag_id == Tag.id)
         .filter(VenueTag.venue_id == venue.id)
         .all()
@@ -129,7 +129,10 @@ def _to_detail(db: Session, venue: Venue) -> AdminVenueDetail:
         instagram_url=venue.instagram_url,
         price_level=venue.price_level,
         last_verified_at=venue.last_verified_at,
-        tags=[AdminVenueTagOut(slug=s, name=n, confidence=float(c)) for s, n, c in tags],
+        tags=[
+            AdminVenueTagOut(slug=s, name=n, confidence=float(c), assigned_by=a)
+            for s, n, c, a in tags
+        ],
         sources=[
             AdminVenueSourceOut(
                 id=s.id,

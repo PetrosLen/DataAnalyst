@@ -97,5 +97,10 @@ sandboxed δίκτυο και μπλοκάρει το React hydration, οπότ�
 σε wrapper `<div>`), ανεξάρτητα από ό,τι είναι αποθηκευμένο στο ίδιο browser — είναι το εργαλείο
 του ιδιοκτήτη, όχι το gendered public app.
 
-Η προτίμηση περνάει και στο backend ως `preferred_audience` στο `POST /search` — βλ. backend
-README §"Audience preference" για το πώς (και γιατί ΔΕΝ) επηρεάζει τα αποτελέσματα ακόμα.
+Η προτίμηση περνάει και στο backend σε δύο σημεία:
+- `preferred_audience` στο `POST /search` (μικρό soft nudge αν το venue είναι ήδη ταγκαρισμένο)
+- `audience` στο `POST /feedback` (το `FeedbackWidget` το στέλνει αυτόματα) — αυτό είναι το πιο
+  σημαντικό: αρκετά θετικά feedback από το ίδιο δηλωμένο φύλο πάνω σε ένα venue κάνουν το backend
+  να ταγκάρει **μόνο του** το venue ως `male-friendly`/`female-friendly`, χωρίς κανείς (ούτε ο
+  admin, ούτε το Claude) να το αποφασίσει εκ των προτέρων. Βλ. backend README §"Feedback" για την
+  ακριβή λογική (ελάχιστο δείγμα, αναλογία, ποτέ δεν πατάει πάνω σε χειροκίνητο tag admin).

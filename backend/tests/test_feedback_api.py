@@ -1,6 +1,6 @@
 from geoalchemy2.elements import WKTElement
 
-from app.db.models import UserFeedback, Venue
+from app.db.models import Tag, UserFeedback, Venue, VenueTag
 
 
 def _seed_venue(db_session) -> Venue:
@@ -75,3 +75,63 @@ def test_submit_feedback_invalid_type_returns_422(client, db_session):
         },
     )
     assert response.status_code == 422
+
+
+def test_submit_feedback_stores_audience(client, db_session):
+    venue = _seed_venue(db_session)
+    response = client.post(
+        "/api/v1/feedback",
+        json={
+            "session_id": "test-session",
+            "venue_slug": venue.slug,
+            "feedback_type": "thumbs_up",
+            "audience": "male",
+        },
+    )
+    assert response.status_code == 201
+    row = db_session.query(UserFeedback).filter_by(id=response.json()["id"]).first()
+    assert row.audience == "male"
+
+
+def test_enough_positive_male_feedback_creates_audience_tag(client, db_session):
+    venue = _seed_venue(db_session)
+    if not db_session.query(Tag).filter_by(slug="male-friendly").first():
+        db_session.add(Tag(slug="male-friendly", name="Male-friendly", tag_type="audience"))
+        db_session.flush()
+
+    for _ in range(3):
+        response = client.post(
+            "/api/v1/feedback",
+            json={
+                "session_id": "test-session",
+                "venue_slug": venue.slug,
+                "feedback_type": "thumbs_up",
+                "audience": "male",
+            },
+        )
+        assert response.status_code == 201
+
+    tag = db_session.query(Tag).filter_by(slug="male-friendly").first()
+    venue_tag = db_session.query(VenueTag).filter_by(venue_id=venue.id, tag_id=tag.id).first()
+    assert venue_tag is not None
+    assert venue_tag.assigned_by == "user_feedback"
+
+
+def test_audience_other_does_not_trigger_tag_recomputation(client, db_session):
+    venue = _seed_venue(db_session)
+    for _ in range(5):
+        client.post(
+            "/api/v1/feedback",
+            json={
+                "session_id": "test-session",
+                "venue_slug": venue.slug,
+                "feedback_type": "thumbs_up",
+                "audience": "other",
+            },
+        )
+    tag = db_session.query(Tag).filter_by(slug="male-friendly").first()
+    if tag:
+        assert (
+            db_session.query(VenueTag).filter_by(venue_id=venue.id, tag_id=tag.id).first()
+            is None
+        )

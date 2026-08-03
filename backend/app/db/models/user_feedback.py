@@ -15,6 +15,9 @@ class UserFeedback(Base):
             "feedback_type IN ('thumbs_up', 'thumbs_down', 'closed', 'wrong_info', 'love_it')",
             name="ck_user_feedback_feedback_type",
         ),
+        CheckConstraint(
+            "audience IN ('male', 'female', 'other')", name="ck_user_feedback_audience"
+        ),
         Index("idx_user_feedback_venue", "venue_id"),
         Index("idx_user_feedback_type", "feedback_type"),
     )
@@ -27,6 +30,12 @@ class UserFeedback(Base):
     feedback_type: Mapped[str] = mapped_column(String, nullable=False)
     free_text: Mapped[str | None] = mapped_column(String, nullable=True)
     session_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Self-declared gender/theme preference at time of feedback (see the
+    # frontend's gender gate) — nullable because feedback predates this
+    # field, or the submitter never set a preference. Powers the
+    # user_feedback-derived audience-lean tags (see
+    # app/recommendation/audience_signal.py).
+    audience: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

@@ -19,7 +19,12 @@ export type AdminVenueListItem = {
   created_at: string;
 };
 
-export type AdminVenueTag = { slug: string; name: string; confidence: number };
+export type AdminVenueTag = {
+  slug: string;
+  name: string;
+  confidence: number;
+  assigned_by: string;
+};
 export type AdminVenueSource = {
   id: number;
   source_type: string;

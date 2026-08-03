@@ -12,6 +12,7 @@ class AdminVenueTagOut(BaseModel):
     slug: str
     name: str
     confidence: float
+    assigned_by: str
 
 
 class AdminVenueSourceOut(BaseModel):

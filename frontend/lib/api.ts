@@ -109,6 +109,7 @@ export async function submitFeedback(params: {
   venueSlug: string;
   feedbackType: FeedbackType;
   freeText?: string;
+  audience?: "male" | "female" | "other";
 }): Promise<void> {
   const res = await fetch(`${API_BASE_URL}/feedback`, {
     method: "POST",
@@ -118,6 +119,7 @@ export async function submitFeedback(params: {
       venue_slug: params.venueSlug,
       feedback_type: params.feedbackType,
       free_text: params.freeText,
+      audience: params.audience,
     }),
     cache: "no-store",
   });

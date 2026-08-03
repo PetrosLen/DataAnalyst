@@ -39,13 +39,13 @@ alembic upgrade head
 alembic downgrade -1
 ```
 
-## Τρέχον schema (migrations `0001`-`0005`)
+## Τρέχον schema (migrations `0001`-`0006`)
 
 Καλύπτει τα "core" tables του Week 1 (`city_areas`, `categories`, `tags`, `admin_users`, `venues`,
 `venue_categories`, `venue_sources`, `venue_hours`, `venue_tags`, `venue_signals`) plus
 `search_logs`/`recommendation_events` (Week 2, για το `/search` endpoint) plus `confidence_audits`
-(audit trail για admin edits) plus `user_feedback` (thumbs up/down κ.λπ.) plus `venue_media`
-(φωτογραφίες, βλ. §Photos παρακάτω). Οι υπόλοιποι πίνακες του πλήρους schema
+(audit trail για admin edits) plus `user_feedback` (thumbs up/down κ.λπ., + `audience` — βλ.
+§Feedback) plus `venue_media` (φωτογραφίες, βλ. §Photos παρακάτω). Οι υπόλοιποι πίνακες του πλήρους schema
 (`sponsored_placements`, `content_pages`, `update_jobs`, `venue_reviews_internal`,
 `user_submitted_corrections`, `duplicate_candidates`, `recommendation_engine_config`) θα
 προστεθούν σε επόμενα migrations καθώς χτίζεται το αντίστοιχο functionality (βλ. backlog στο
@@ -110,24 +110,33 @@ that tag**, adds a small confidence-weighted nudge (`+0.08 * tag_confidence`, fo
 existing `context` score component) — never a filter, never enough to override intent/distance/
 budget. `"other"` (or omitting the field) has zero effect.
 
-**Important: neither tag is currently assigned to any of the 10 seed venues**, so today this is
-pure plumbing with no visible effect on results. Deciding whether a specific real bar/cafe skews
-toward one audience is a subjective call that needs a human (the founder's judgment, or real usage
-data over time) — not something to guess from a venue's name or category. Assigning these tags is
-still DB-direct for now (no admin UI for tag editing yet, same gap as venue_hours/other tags).
+Nobody hand-assigns these tags — see below, they're **derived from real feedback**, not guessed.
 
-## Feedback (`POST /feedback`)
+## Feedback (`POST /feedback`) + the audience-lean signal it feeds
 
 Public, no auth. Logs a `user_feedback` row (`thumbs_up` / `thumbs_down` / `closed` /
-`wrong_info` / `love_it`, optional free text) against a venue by slug. Per the design doc, this
-**never auto-updates venue data** — it's a signal for admin review (visible as `feedback_counts`
-on `GET /admin/venues/{id}`), not a source of truth.
+`wrong_info` / `love_it`, optional free text, optional `audience`) against a venue by slug.
 
 ```bash
 curl -s -X POST http://localhost:8000/api/v1/feedback \
   -H "Content-Type: application/json" \
-  -d '{"session_id": "demo", "venue_slug": "thermaikos-bar", "feedback_type": "thumbs_up"}'
+  -d '{"session_id": "demo", "venue_slug": "thermaikos-bar", "feedback_type": "thumbs_up", "audience": "male"}'
 ```
+
+Per the design doc's philosophy, feedback **never directly edits venue facts** — but there's one
+deliberate exception, because it's evidence rather than a guess: `app/recommendation/
+audience_signal.py` runs after every feedback submission that includes `audience`. It counts
+positive feedback (`thumbs_up`/`love_it`) per venue, grouped by the submitter's self-declared
+audience, and only once a side has **at least 3 positive votes AND at least 1.5x the other side's
+count** does it create/update a `male-friendly`/`female-friendly` `venue_tags` row
+(`assigned_by="user_feedback"`, confidence scaling with sample size, capped at 0.85). If the signal
+later stops qualifying (e.g. the other side catches up), the derived tag is removed automatically.
+**An admin-assigned tag (`assigned_by="admin"`) is never touched by this** — a human's explicit
+call always wins over the aggregate. This is exactly why no one (not Claude, not the founder) had
+to sit down and manually decide which of the 10 seed venues "skews male" or "skews female": the
+question only gets answered once real people actually say so, and it stays current as opinions
+shift. See `GET /admin/venues/{id}`'s `tags[].assigned_by` to see which tags are asserted vs.
+derived vs. AI-suggested.
 
 ## Admin panel API (`/admin/*`)
 
