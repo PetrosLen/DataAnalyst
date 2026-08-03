@@ -49,6 +49,7 @@ class AdminVenueDetail(AdminVenueListItem):
     last_verified_at: datetime | None
     tags: list[AdminVenueTagOut]
     sources: list[AdminVenueSourceOut]
+    feedback_counts: dict[str, int]
 
 
 class AdminVenueUpdate(BaseModel):

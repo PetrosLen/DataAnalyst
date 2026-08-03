@@ -99,3 +99,27 @@ export async function getVenue(slug: string): Promise<VenueDetail | null> {
   }
   return res.json();
 }
+
+export type FeedbackType = "thumbs_up" | "thumbs_down" | "closed" | "wrong_info" | "love_it";
+
+export async function submitFeedback(params: {
+  sessionId: string;
+  venueSlug: string;
+  feedbackType: FeedbackType;
+  freeText?: string;
+}): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/feedback`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      session_id: params.sessionId,
+      venue_slug: params.venueSlug,
+      feedback_type: params.feedbackType,
+      free_text: params.freeText,
+    }),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    throw new ApiError(res.status, `Feedback failed: ${res.status}`);
+  }
+}

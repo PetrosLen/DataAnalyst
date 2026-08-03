@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_admin
@@ -10,6 +11,7 @@ from app.db.models import (
     CityArea,
     ConfidenceAudit,
     Tag,
+    UserFeedback,
     Venue,
     VenueSource,
     VenueTag,
@@ -92,6 +94,12 @@ def _to_detail(db: Session, venue: Venue) -> AdminVenueDetail:
         .all()
     )
     sources = db.query(VenueSource).filter(VenueSource.venue_id == venue.id).all()
+    feedback_counts = dict(
+        db.query(UserFeedback.feedback_type, func.count(UserFeedback.id))
+        .filter(UserFeedback.venue_id == venue.id)
+        .group_by(UserFeedback.feedback_type)
+        .all()
+    )
 
     return AdminVenueDetail(
         id=venue.id,
@@ -123,6 +131,7 @@ def _to_detail(db: Session, venue: Venue) -> AdminVenueDetail:
             )
             for s in sources
         ],
+        feedback_counts=feedback_counts,
     )
 
 

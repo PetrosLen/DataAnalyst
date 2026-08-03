@@ -1,7 +1,7 @@
 from geoalchemy2.elements import WKTElement
 
 from app.core.security import hash_password
-from app.db.models import AdminUser, ConfidenceAudit, Venue
+from app.db.models import AdminUser, ConfidenceAudit, UserFeedback, Venue
 
 ADMIN_EMAIL = "test-admin@whereto.local"
 ADMIN_PASSWORD = "correct-horse-battery-staple"
@@ -97,3 +97,23 @@ def test_admin_update_venue_unknown_id_returns_404(client, db_session):
         auth=(ADMIN_EMAIL, ADMIN_PASSWORD),
     )
     assert response.status_code == 404
+
+
+def test_admin_venue_detail_includes_feedback_counts(client, db_session):
+    _seed_admin(db_session)
+    venue = _seed_pending_venue(db_session)
+    db_session.add_all(
+        [
+            UserFeedback(venue_id=venue.id, feedback_type="thumbs_up"),
+            UserFeedback(venue_id=venue.id, feedback_type="thumbs_up"),
+            UserFeedback(venue_id=venue.id, feedback_type="wrong_info"),
+        ]
+    )
+    db_session.flush()
+
+    response = client.get(
+        f"/api/v1/admin/venues/{venue.id}", auth=(ADMIN_EMAIL, ADMIN_PASSWORD)
+    )
+    assert response.status_code == 200
+    counts = response.json()["feedback_counts"]
+    assert counts == {"thumbs_up": 2, "wrong_info": 1}

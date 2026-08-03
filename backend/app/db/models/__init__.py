@@ -5,6 +5,7 @@ from app.db.models.confidence_audit import ConfidenceAudit
 from app.db.models.recommendation_event import RecommendationEvent
 from app.db.models.search_log import SearchLog
 from app.db.models.tag import Tag
+from app.db.models.user_feedback import UserFeedback
 from app.db.models.venue import Venue
 from app.db.models.venue_category import VenueCategory
 from app.db.models.venue_hours import VenueHours
@@ -20,6 +21,7 @@ __all__ = [
     "RecommendationEvent",
     "SearchLog",
     "Tag",
+    "UserFeedback",
     "Venue",
     "VenueCategory",
     "VenueHours",

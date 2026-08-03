@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getVenue } from "@/lib/api";
+import FeedbackWidget from "@/components/FeedbackWidget";
 
 export default async function VenuePage({
   params,
@@ -59,10 +60,12 @@ export default async function VenuePage({
         href={directionsUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-2 w-full text-center rounded-2xl bg-accent text-neutral-950 font-semibold py-4 text-base"
+        className="w-full text-center rounded-2xl bg-accent text-neutral-950 font-semibold py-4 text-base"
       >
         Οδηγίες
       </a>
+
+      <FeedbackWidget venueSlug={venue.slug} />
     </main>
   );
 }

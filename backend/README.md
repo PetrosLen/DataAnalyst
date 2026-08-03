@@ -39,17 +39,17 @@ alembic upgrade head
 alembic downgrade -1
 ```
 
-## Τρέχον schema (migrations `0001_core_schema`, `0002_search_recommendation_logs`, `0003_confidence_audits`)
+## Τρέχον schema (migrations `0001`-`0004`)
 
 Καλύπτει τα "core" tables του Week 1 (`city_areas`, `categories`, `tags`, `admin_users`, `venues`,
 `venue_categories`, `venue_sources`, `venue_hours`, `venue_tags`, `venue_signals`) plus
 `search_logs`/`recommendation_events` (Week 2, για το `/search` endpoint) plus `confidence_audits`
-(audit trail για admin edits). Οι υπόλοιποι πίνακες του πλήρους schema (`user_feedback`,
-`sponsored_placements`, `content_pages`, `update_jobs`, `venue_media`, `venue_reviews_internal`,
-`user_submitted_corrections`, `duplicate_candidates`, `recommendation_engine_config`) θα
-προστεθούν σε επόμενα migrations καθώς χτίζεται το αντίστοιχο functionality (βλ. backlog στο
-`docs/where-to/PRODUCT_DESIGN.md` §20.F). Το πλήρες σχήμα-στόχος υπάρχει ήδη ως reference στο
-`docs/where-to/schema.sql`.
+(audit trail για admin edits) plus `user_feedback` (thumbs up/down κ.λπ.). Οι υπόλοιποι πίνακες
+του πλήρους schema (`sponsored_placements`, `content_pages`, `update_jobs`, `venue_media`,
+`venue_reviews_internal`, `user_submitted_corrections`, `duplicate_candidates`,
+`recommendation_engine_config`) θα προστεθούν σε επόμενα migrations καθώς χτίζεται το αντίστοιχο
+functionality (βλ. backlog στο `docs/where-to/PRODUCT_DESIGN.md` §20.F). Το πλήρες σχήμα-στόχος
+υπάρχει ήδη ως reference στο `docs/where-to/schema.sql`.
 
 ## Seed data
 
@@ -99,6 +99,19 @@ curl -s -X POST http://localhost:8000/api/v1/search \
 ```
 
 Only `status="active"` venues are ever returned. Venue detail: `GET /api/v1/venues/{slug}`.
+
+## Feedback (`POST /feedback`)
+
+Public, no auth. Logs a `user_feedback` row (`thumbs_up` / `thumbs_down` / `closed` /
+`wrong_info` / `love_it`, optional free text) against a venue by slug. Per the design doc, this
+**never auto-updates venue data** — it's a signal for admin review (visible as `feedback_counts`
+on `GET /admin/venues/{id}`), not a source of truth.
+
+```bash
+curl -s -X POST http://localhost:8000/api/v1/feedback \
+  -H "Content-Type: application/json" \
+  -d '{"session_id": "demo", "venue_slug": "thermaikos-bar", "feedback_type": "thumbs_up"}'
+```
 
 ## Admin panel API (`/admin/*`)
 
