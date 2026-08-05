@@ -1,0 +1,32 @@
+from __future__ import annotations
+
+from pydantic import BaseModel
+
+
+class VenueTagOut(BaseModel):
+    slug: str
+    name: str
+    confidence: float
+
+
+class VenuePhotoOut(BaseModel):
+    url: str
+    # Set when Google (or another source) requires it to be shown alongside
+    # the image — render it as a visible caption, don't drop it.
+    attribution: str | None
+
+
+class VenueDetailOut(BaseModel):
+    slug: str
+    name: str
+    description_short: str | None
+    description_long: str | None
+    address: str | None
+    phone: str | None
+    website: str | None
+    instagram_url: str | None
+    price_level: int | None
+    primary_category_slug: str | None
+    overall_confidence: float
+    tags: list[VenueTagOut]
+    photos: list[VenuePhotoOut]

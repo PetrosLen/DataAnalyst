@@ -1,0 +1,288 @@
+# Πρώτο seed batch — Θεσσαλονίκη, verticals "ήσυχο ποτό/καφέ" + "date spots".
+#
+# ΠΡΟΕΛΕΥΣΗ: Τα venues παρακάτω εντοπίστηκαν μέσω web research (άρθρα τοπικών
+# guides/blogs, επίσημες καταχωρήσεις επιχειρήσεων) από τον Claude, ΟΧΙ μέσω
+# προσωπικής επίσκεψης/τηλεφωνικής επιβεβαίωσης. Γι' αυτό:
+#   - status = "pending" σε ΟΛΑ (δεν είναι public μέχρι να τα εγκρίνει admin)
+#   - overall_confidence χαμηλό-μέτριο (0.35-0.45)
+#   - source_type = "claude_assisted" με source_ref = τα URLs που βρέθηκαν
+#   - geo_precision "address" = γεωκωδικοποιήθηκε η ακριβής διεύθυνση,
+#     "district" = δεν βρέθηκε η ακριβής διεύθυνση σε OpenStreetMap και
+#     χρησιμοποιήθηκε το κέντρο της γειτονιάς αντ' αυτού (χρειάζεται GPS pin
+#     επιβεβαίωση πριν γίνει active)
+#   - ωράρια μπήκαν ΜΟΝΟ όπου βρέθηκε ρητά δηλωμένο ωράριο σε πηγή· όλα τα
+#     άλλα venues δεν έχουν καθόλου venue_hours rows (= άγνωστο ωράριο, όχι
+#     εικασία)
+#
+# Επόμενο βήμα (admin, όχι αυτόματο): τηλεφωνική επιβεβαίωση/επίσκεψη ανά
+# venue πριν εγκριθεί σε status=active. Βλ. docs/where-to/PRODUCT_DESIGN.md §8.
+
+city_areas:
+  - slug: center-aristotelous
+    name: Κέντρο / Πλατεία Αριστοτέλους
+  - slug: ladadika
+    name: Λαδάδικα
+  - slug: valaoritou
+    name: Βαλαωρίτου
+  - slug: ano-poli
+    name: Άνω Πόλη
+  - slug: paralia
+    name: Παραλία (Νίκης)
+  - slug: lefkos-pyrgos
+    name: Λευκός Πύργος
+  - slug: panorama
+    name: Πανόραμα
+
+categories:
+  - slug: bar
+    name: Μπαρ
+  - slug: wine_bar
+    name: Wine Bar
+    parent_slug: bar
+  - slug: cafe
+    name: Καφέ
+  - slug: restaurant
+    name: Εστιατόριο
+
+tags:
+  - slug: quiet
+    name: Ήσυχο
+    tag_type: vibe
+  - slug: romantic
+    name: Ρομαντικό
+    tag_type: vibe
+  - slug: scenic-view
+    name: Θέα
+    tag_type: vibe
+  - slug: historic
+    name: Ιστορικό
+    tag_type: vibe
+  - slug: modern
+    name: Μοντέρνο
+    tag_type: vibe
+  - slug: laptop-friendly
+    name: Laptop-friendly
+    tag_type: amenity
+  - slug: outdoor-seating
+    name: Εξωτερικός χώρος
+    tag_type: amenity
+  - slug: couple-friendly
+    name: Ιδανικό για ζευγάρια
+    tag_type: audience
+  # "male-friendly"/"female-friendly": dictionary entries only, deliberately
+  # NOT assigned to any venue below. Whether a real bar/cafe skews toward one
+  # audience is a subjective call — it needs a human (the founder, or real
+  # usage data over time), not an AI guessing from a name and a category.
+  # They exist so the /search "preferred_audience" soft-nudge (see
+  # recommendation/scoring.py) has something to match against once someone
+  # decides to tag specific venues.
+  - slug: male-friendly
+    name: Male-friendly
+    tag_type: audience
+  - slug: female-friendly
+    name: Female-friendly
+    tag_type: audience
+
+venues:
+  - slug: vogatsikou-3
+    name: "Vogatsikou 3"
+    description_short: "Βραβευμένο cocktail & coffee bar στο κέντρο, δημιουργία του bartender Γιάννη Κέδε."
+    address: "Βογατσικού 3, 546 22 Θεσσαλονίκη"
+    city_area_slug: center-aristotelous
+    lat: 40.6301025
+    lon: 22.9440100
+    geo_precision: address
+    phone: "+302310222899"
+    price_level: 3
+    primary_category_slug: bar
+    category_slugs: [bar]
+    tag_slugs:
+      - {slug: modern, confidence: 0.6}
+    hours: []
+    overall_confidence: 0.40
+    source_ref: "https://evendo.com/locations/greece/thessaloniki/bar/vogatsikou-3 ; https://www.xo.gr/profile/profile-911488893/en/"
+
+  - slug: thermaikos-bar
+    name: "Θερμαϊκός"
+    description_short: "Ιστορικό μπαρ από το 1992 στην παραλιακή οδό Νίκης, κοσμοπολίτικη ατμόσφαιρα."
+    address: "Λεωφόρος Νίκης 21, 546 23 Θεσσαλονίκη"
+    city_area_slug: paralia
+    lat: 40.6308082
+    lon: 22.9422814
+    geo_precision: district
+    phone: "+302310239842"
+    price_level: 2
+    primary_category_slug: bar
+    category_slugs: [bar]
+    tag_slugs:
+      - {slug: historic, confidence: 0.7}
+      - {slug: scenic-view, confidence: 0.5}
+    hours:
+      - {day_of_week: 0, open_time: "10:00", close_time: "02:00", confidence: 0.5}
+      - {day_of_week: 1, open_time: "10:00", close_time: "02:00", confidence: 0.5}
+      - {day_of_week: 2, open_time: "10:00", close_time: "02:00", confidence: 0.5}
+      - {day_of_week: 3, open_time: "10:00", close_time: "02:00", confidence: 0.5}
+      - {day_of_week: 4, open_time: "10:00", close_time: "02:00", confidence: 0.5}
+      - {day_of_week: 5, open_time: "10:00", close_time: "02:00", confidence: 0.5}
+      - {day_of_week: 6, open_time: "10:00", close_time: "02:00", confidence: 0.5}
+    overall_confidence: 0.42
+    source_ref: "https://cityportal.gr/thermaikos-bar-o-mythos-tis-polis-giortazei-ta-30-toy-chronia/ ; https://www.xo.gr/profile/profile-911671897/el/"
+
+  - slug: castra-terrace-bar
+    name: "Castra Terrace Bar"
+    description_short: "Bar-καφέ με πανοραμική θέα στην πόλη, δίπλα στα τείχη της Άνω Πόλης."
+    address: "Επταπυργίου 122, Άνω Πόλη, 546 34 Θεσσαλονίκη"
+    city_area_slug: ano-poli
+    lat: 40.6413331
+    lon: 22.9582782
+    geo_precision: address
+    phone: "+302310207277"
+    price_level: 2
+    primary_category_slug: bar
+    category_slugs: [bar]
+    tag_slugs:
+      - {slug: scenic-view, confidence: 0.75}
+      - {slug: quiet, confidence: 0.4}
+      - {slug: romantic, confidence: 0.45}
+    hours: []
+    overall_confidence: 0.42
+    source_ref: "https://biscotto.gr/vges-sti-thessaloniki-se-10-1-bars-me-fantastiki-thea/ ; https://www.thessalonikiguide.gr/place/thermaikos-bar/"
+
+  - slug: ristretto-wine-bar
+    name: "Ristretto Espresso Wine Bar"
+    description_short: "Ατμοσφαιρικό wine bar στα Λαδάδικα, προστατευμένος εξωτερικός χώρος με θερμάστρες."
+    address: "Παγγαίου 5, Λαδάδικα, 546 25 Θεσσαλονίκη"
+    city_area_slug: ladadika
+    lat: 40.6350971
+    lon: 22.9369384
+    geo_precision: district
+    phone: "+306940553000"
+    price_level: 2
+    primary_category_slug: wine_bar
+    category_slugs: [wine_bar]
+    tag_slugs:
+      - {slug: romantic, confidence: 0.55}
+      - {slug: outdoor-seating, confidence: 0.6}
+    hours: []
+    overall_confidence: 0.38
+    source_ref: "https://www.tripadvisor.com.gr/ShowUserReviews-g189473-d4427374-r239961905-Ristretto_Wine_Bar-Thessaloniki_Thessaloniki_Region_Central_Macedonia.html"
+
+  - slug: venti-valaoritou
+    name: "Venti Valaoritou"
+    description_short: "Καφετέρια-μπαρ στην καρδιά της Βαλαωρίτου, κεντρική τοποθεσία."
+    address: "Βαλαωρίτου - Αριστοτέλους 20, Φραγκομαχαλάς, 546 25 Θεσσαλονίκη"
+    city_area_slug: valaoritou
+    lat: 40.6405862
+    lon: 22.9351980
+    geo_precision: district
+    phone: "+302310510771"
+    price_level: 2
+    primary_category_slug: cafe
+    category_slugs: [cafe, bar]
+    tag_slugs:
+      - {slug: modern, confidence: 0.4}
+    hours: []
+    overall_confidence: 0.35
+    source_ref: "https://www.xo.gr/profile/profile-911668632/el/"
+
+  - slug: la-doze-bar
+    name: "La Doze Bar"
+    description_short: "Μοντέρνο street bar στη Βαλαωρίτου, distinctive μουσική και cocktails, φιλοξενεί εκθέσεις."
+    address: "Βηλαρά 1 & Σύγγρου, Βαλαωρίτου, 546 25 Θεσσαλονίκη"
+    city_area_slug: valaoritou
+    lat: 40.6405862
+    lon: 22.9351980
+    geo_precision: district
+    phone: "+302310532986"
+    price_level: 2
+    primary_category_slug: bar
+    category_slugs: [bar]
+    tag_slugs:
+      - {slug: modern, confidence: 0.6}
+    hours: []
+    overall_confidence: 0.38
+    source_ref: "https://www.yourlittleblackbook.me/en/la-doze-thessaloniki-cocktailbar/ ; https://www.greekwhiskyassociation.gr/venue/la-doze-bar-%CE%B2%CE%B7%CE%BB%CE%B1%CF%81%CE%AC-1-%CE%B8%CE%B5%CF%83%CF%83%CE%B1%CE%BB%CE%BF%CE%BD%CE%AF%CE%BA%CE%B7-54625/"
+
+  - slug: white-rabbit
+    name: "White Rabbit"
+    description_short: "Κομψό café-wine bar κοντά στον Λευκό Πύργο, ήσυχο περιβάλλον, καφές/cocktails/κρασί."
+    address: "Υπολοχαγού Τσόπελα Ευσταθίου 4, Λευκός Πύργος, 546 22 Θεσσαλονίκη"
+    city_area_slug: lefkos-pyrgos
+    lat: 40.6268912
+    lon: 22.9501966
+    geo_precision: address
+    phone: "+302310242199"
+    price_level: 3
+    primary_category_slug: cafe
+    category_slugs: [cafe]
+    tag_slugs:
+      - {slug: quiet, confidence: 0.55}
+      - {slug: laptop-friendly, confidence: 0.35}
+    hours:
+      - {day_of_week: 0, open_time: "08:00", close_time: "02:00", confidence: 0.4}
+      - {day_of_week: 1, open_time: "08:00", close_time: "02:00", confidence: 0.4}
+      - {day_of_week: 2, open_time: "08:00", close_time: "02:00", confidence: 0.4}
+      - {day_of_week: 3, open_time: "08:00", close_time: "02:00", confidence: 0.4}
+      - {day_of_week: 4, open_time: "08:00", close_time: "02:00", confidence: 0.4}
+      - {day_of_week: 5, open_time: "08:00", close_time: "02:00", confidence: 0.4}
+      - {day_of_week: 6, open_time: "08:00", close_time: "02:00", confidence: 0.4}
+    overall_confidence: 0.40
+    source_ref: "https://www.lavart.gr/white-rabbit-i-pio-thavmasti-kounelotrypa-ths-thessalonikis/ ; https://www.xo.gr/profile/profile-911559155/el/"
+
+  - slug: orizontes-roof-garden
+    name: "Orizontes Roof Garden"
+    description_short: "Roof garden στο ξενοδοχείο Electra Palace, θέα στο κέντρο και τον Θερμαϊκό — δημοφιλής επιλογή για ρομαντικό ραντεβού."
+    address: "Πλατεία Αριστοτέλους 9, 546 24 Θεσσαλονίκη"
+    city_area_slug: center-aristotelous
+    lat: 40.6323379
+    lon: 22.9409019
+    geo_precision: address
+    price_level: 4
+    primary_category_slug: restaurant
+    category_slugs: [restaurant, bar]
+    tag_slugs:
+      - {slug: romantic, confidence: 0.65}
+      - {slug: scenic-view, confidence: 0.7}
+      - {slug: couple-friendly, confidence: 0.55}
+    hours: []
+    photos:
+      - url: "https://orizontesrestaurant.com/wp-content/uploads/2026/03/electra-palace-thessaloniki-orizontes-1024x787.jpg"
+    overall_confidence: 0.38
+    source_ref: "https://www.savoirville.gr/thessaloniki-spots-gia-prwto-rantevou/ ; photo from official site https://orizontesrestaurant.com/"
+
+  - slug: paparouna-wine-culture
+    name: "Paparouna Wine Culture Restaurant"
+    description_short: "Εστιατόριο-wine bar στα Κάτω Λαδάδικα, επιλεγμένα ελληνικά κρασιά και cocktails."
+    address: "Παγγαίου 4 & Δόξης, Κάτω Λαδάδικα, 546 25 Θεσσαλονίκη"
+    city_area_slug: ladadika
+    lat: 40.6350971
+    lon: 22.9369384
+    geo_precision: district
+    phone: "+302310510852"
+    price_level: 3
+    primary_category_slug: restaurant
+    category_slugs: [restaurant, wine_bar]
+    tag_slugs:
+      - {slug: romantic, confidence: 0.5}
+    hours: []
+    overall_confidence: 0.36
+    source_ref: "https://www.diakopes.gr/empeiries/enas-xechoristos-gefstiko-valentinos-ta-pio-hot-estiatoria-se-athina-kai-thessaloniki/"
+
+  - slug: villa-luna-panorama
+    name: "Villa Luna"
+    description_short: "Cafe-bar-εστιατόριο στο Πανόραμα, ανάμεσα σε πεύκα, με θέα σε όλη την πόλη — γνωστό ως 'το πιο όμορφο μπαλκόνι της Θεσσαλονίκης'."
+    address: "Αναλήψεως 40, Πανόραμα, 552 36 Θεσσαλονίκη"
+    city_area_slug: panorama
+    lat: 40.5909109
+    lon: 23.0329174
+    geo_precision: district
+    phone: "+302310340440"
+    price_level: 3
+    primary_category_slug: restaurant
+    category_slugs: [restaurant, cafe]
+    tag_slugs:
+      - {slug: scenic-view, confidence: 0.7}
+      - {slug: romantic, confidence: 0.5}
+    hours: []
+    overall_confidence: 0.38
+    source_ref: "https://www.villa-luna.gr/ ; https://www.vrisko.gr/details/a6dd10b2a347_47a772_ag760kb__h6d"
