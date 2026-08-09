@@ -3,13 +3,19 @@
 import { useEffect, useState } from "react";
 import {
   AdminAuthError,
+  assignVenueTag,
   getGooglePlacesUsage,
   getVenue,
+  listTags,
   listVenues,
+  removeVenueTag,
   updateVenue,
+  updateVenueHours,
   updateVenueMediaLicense,
   verifyCredentials,
+  type AdminTag,
   type AdminVenueDetail,
+  type AdminVenueHoursUpdate,
   type AdminVenueListItem,
   type AdminVenueUpdate,
   type GooglePlacesUsage,
@@ -22,6 +28,19 @@ import {
 } from "@/lib/adminAuth";
 
 const STATUS_TABS = ["pending", "active", "inactive", "unverified", "merged"] as const;
+
+// day_of_week convention: 0=Monday ... 6=Sunday (matches the backend everywhere else)
+const DAY_LABELS = ["Δευ", "Τρί", "Τετ", "Πέμ", "Παρ", "Σάβ", "Κυρ"];
+
+type HoursFormRow = { open_time: string; close_time: string; is_closed: boolean };
+
+function emptyHoursForm(): Record<number, HoursFormRow> {
+  const form: Record<number, HoursFormRow> = {};
+  for (let day = 0; day < 7; day++) {
+    form[day] = { open_time: "", close_time: "", is_closed: false };
+  }
+  return form;
+}
 
 export default function AdminPage() {
   const [creds, setCreds] = useState<AdminCredentials | null>(null);
@@ -342,6 +361,15 @@ function VenueEditPanel({
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
+  const [allTags, setAllTags] = useState<AdminTag[] | null>(null);
+  const [tagToAdd, setTagToAdd] = useState("");
+  const [tagConfidenceToAdd, setTagConfidenceToAdd] = useState(0.8);
+  const [tagBusy, setTagBusy] = useState(false);
+
+  const [hoursForm, setHoursForm] = useState<Record<number, HoursFormRow>>(emptyHoursForm());
+  const [savingHours, setSavingHours] = useState(false);
+  const [hoursMessage, setHoursMessage] = useState<string | null>(null);
+
   useEffect(() => {
     let cancelled = false;
     getVenue(creds, venueId)
@@ -357,12 +385,28 @@ function VenueEditPanel({
           status: d.status,
           overall_confidence: d.overall_confidence,
         });
+        const nextHoursForm = emptyHoursForm();
+        for (const h of d.hours) {
+          nextHoursForm[h.day_of_week] = {
+            open_time: h.open_time ? h.open_time.slice(0, 5) : "",
+            close_time: h.close_time ? h.close_time.slice(0, 5) : "",
+            is_closed: h.is_closed,
+          };
+        }
+        setHoursForm(nextHoursForm);
       })
       .catch((err) => {
         if (err instanceof AdminAuthError) onAuthError();
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
+      });
+    listTags(creds)
+      .then((t) => {
+        if (!cancelled) setAllTags(t);
+      })
+      .catch(() => {
+        // Non-critical — the "add tag" picker just stays empty.
       });
     return () => {
       cancelled = true;
@@ -412,6 +456,67 @@ function VenueEditPanel({
     }
   }
 
+  async function addTag() {
+    if (!tagToAdd) return;
+    setTagBusy(true);
+    try {
+      const updated = await assignVenueTag(creds, venueId, tagToAdd, tagConfidenceToAdd);
+      setDetail(updated);
+      setTagToAdd("");
+      setTagConfidenceToAdd(0.8);
+    } catch (err) {
+      if (err instanceof AdminAuthError) onAuthError();
+    } finally {
+      setTagBusy(false);
+    }
+  }
+
+  async function removeTag(tagSlug: string) {
+    setTagBusy(true);
+    try {
+      const updated = await removeVenueTag(creds, venueId, tagSlug);
+      setDetail(updated);
+    } catch (err) {
+      if (err instanceof AdminAuthError) onAuthError();
+    } finally {
+      setTagBusy(false);
+    }
+  }
+
+  async function saveHours() {
+    setSavingHours(true);
+    setHoursMessage(null);
+    const days: AdminVenueHoursUpdate[] = [];
+    for (let day = 0; day < 7; day++) {
+      const row = hoursForm[day];
+      if (row.is_closed) {
+        days.push({ day_of_week: day, is_closed: true });
+      } else if (row.open_time && row.close_time) {
+        days.push({
+          day_of_week: day,
+          open_time: row.open_time,
+          close_time: row.close_time,
+          is_closed: false,
+        });
+      }
+      // Days left fully empty (no times, not marked closed) are skipped —
+      // "we don't know" stays "we don't know" instead of being overwritten.
+    }
+    try {
+      const updated = await updateVenueHours(creds, venueId, days);
+      setDetail(updated);
+      setHoursMessage("Αποθηκεύτηκε το ωράριο.");
+    } catch (err) {
+      if (err instanceof AdminAuthError) {
+        onAuthError();
+        return;
+      }
+      setHoursMessage("Αποτυχία αποθήκευσης ωραρίου.");
+    } finally {
+      setSavingHours(false);
+    }
+  }
+
   if (loading) {
     return <p className="px-4 pb-4 text-xs text-muted">Φόρτωση στοιχείων…</p>;
   }
@@ -426,12 +531,58 @@ function VenueEditPanel({
           <span
             key={t.slug}
             title={assignedByLabel(t.assigned_by)}
-            className="text-[10px] font-medium rounded-full border border-border px-2 py-0.5 text-muted"
+            className="flex items-center gap-1 text-[10px] font-medium rounded-full border border-border px-2 py-0.5 text-muted"
           >
             {assignedByIcon(t.assigned_by)} {t.name} ({Math.round(t.confidence * 100)}%)
+            <button
+              type="button"
+              onClick={() => removeTag(t.slug)}
+              disabled={tagBusy}
+              aria-label={`Αφαίρεση tag ${t.name}`}
+              className="text-danger font-bold disabled:opacity-40"
+            >
+              ✕
+            </button>
           </span>
         ))}
       </div>
+
+      {allTags && (
+        <div className="flex items-center gap-1.5">
+          <select
+            value={tagToAdd}
+            onChange={(e) => setTagToAdd(e.target.value)}
+            className="admin-input flex-1 text-xs"
+          >
+            <option value="">+ Προσθήκη tag…</option>
+            {allTags
+              .filter((t) => !detail.tags.some((existing) => existing.slug === t.slug))
+              .map((t) => (
+                <option key={t.slug} value={t.slug}>
+                  {t.name} ({t.tag_type})
+                </option>
+              ))}
+          </select>
+          <input
+            type="number"
+            min={0}
+            max={1}
+            step={0.05}
+            value={tagConfidenceToAdd}
+            onChange={(e) => setTagConfidenceToAdd(Number(e.target.value))}
+            className="admin-input w-16 text-xs"
+            title="Confidence"
+          />
+          <button
+            type="button"
+            onClick={addTag}
+            disabled={!tagToAdd || tagBusy}
+            className="shrink-0 text-[10px] font-bold rounded-full border-2 border-accent text-accent px-2.5 py-1.5 disabled:opacity-40"
+          >
+            Προσθήκη
+          </button>
+        </div>
+      )}
 
       <div className="text-[11px] text-muted flex flex-col gap-0.5">
         {detail.sources.map((s) => (
@@ -482,6 +633,67 @@ function VenueEditPanel({
           </div>
         </div>
       )}
+
+      <div className="flex flex-col gap-1.5">
+        <p className="text-xs font-semibold text-muted">Ωράριο</p>
+        <div className="flex flex-col gap-1">
+          {DAY_LABELS.map((label, day) => {
+            const row = hoursForm[day];
+            return (
+              <div key={day} className="flex items-center gap-1.5 text-xs">
+                <span className="w-8 shrink-0 text-muted font-medium">{label}</span>
+                <input
+                  type="time"
+                  value={row.open_time}
+                  disabled={row.is_closed}
+                  onChange={(e) =>
+                    setHoursForm((f) => ({
+                      ...f,
+                      [day]: { ...f[day], open_time: e.target.value },
+                    }))
+                  }
+                  className="admin-input flex-1 disabled:opacity-40"
+                />
+                <span className="text-muted">–</span>
+                <input
+                  type="time"
+                  value={row.close_time}
+                  disabled={row.is_closed}
+                  onChange={(e) =>
+                    setHoursForm((f) => ({
+                      ...f,
+                      [day]: { ...f[day], close_time: e.target.value },
+                    }))
+                  }
+                  className="admin-input flex-1 disabled:opacity-40"
+                />
+                <label className="flex items-center gap-1 shrink-0 text-muted">
+                  <input
+                    type="checkbox"
+                    checked={row.is_closed}
+                    onChange={(e) =>
+                      setHoursForm((f) => ({
+                        ...f,
+                        [day]: { ...f[day], is_closed: e.target.checked },
+                      }))
+                    }
+                  />
+                  κλειστό
+                </label>
+              </div>
+            );
+          })}
+        </div>
+        <button
+          type="button"
+          onClick={saveHours}
+          disabled={savingHours}
+          className="self-start text-[10px] font-bold rounded-full border-2 border-accent text-accent px-3 py-1.5 disabled:opacity-40"
+        >
+          Αποθήκευση ωραρίου
+        </button>
+        {hoursMessage && <p className="text-[10px] text-muted">{hoursMessage}</p>}
+      </div>
 
       <Field label="Όνομα">
         <input

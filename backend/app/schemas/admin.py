@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, time
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -13,6 +13,32 @@ class AdminVenueTagOut(BaseModel):
     name: str
     confidence: float
     assigned_by: str
+
+
+class AdminTagOut(BaseModel):
+    slug: str
+    name: str
+    tag_type: str
+
+
+class AdminVenueTagAssign(BaseModel):
+    tag_slug: str
+    confidence: float = Field(default=0.8, ge=0, le=1)
+
+
+class AdminVenueHoursOut(BaseModel):
+    day_of_week: int
+    open_time: time | None
+    close_time: time | None
+    is_closed: bool
+    confidence: float
+
+
+class AdminVenueHoursUpdate(BaseModel):
+    day_of_week: int = Field(ge=0, le=6)
+    open_time: time | None = None
+    close_time: time | None = None
+    is_closed: bool = False
 
 
 class AdminVenueSourceOut(BaseModel):
@@ -64,6 +90,7 @@ class AdminVenueDetail(AdminVenueListItem):
     sources: list[AdminVenueSourceOut]
     feedback_counts: dict[str, int]
     media: list[AdminVenueMediaOut]
+    hours: list[AdminVenueHoursOut]
 
 
 class GooglePlacesUsageOut(BaseModel):

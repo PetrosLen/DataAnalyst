@@ -42,7 +42,12 @@ npm run dev
   + tags/sources/photos για context) και κουμπί "Έγκριση τώρα". Κάθε φωτογραφία δείχνει ξεχωριστό
   status "⚠ Χρειάζεται επιβεβαίωση άδειας" / "✓ Εγκεκριμένη άδεια" με δικό της toggle (+ attribution
   caption από κάτω όταν υπάρχει) — μια φωτογραφία **δεν** γίνεται ποτέ public μόνη της απλά επειδή
-  προστέθηκε στη βάση. Χρειάζεται admin user (βλ. backend README, `create_admin_user` script).
+  προστέθηκε στη βάση. Κάθε tag pill έχει τώρα δικό του "✕" για αφαίρεση, + ένα picker από κάτω
+  ("+ Προσθήκη tag…" dropdown με confidence input) για να προσθέσεις οποιοδήποτε tag από το
+  dictionary — και ένα πλήρες εβδομαδιαίο ωράριο (Δευ-Κυρ, ώρα ανοίγματος/κλεισίματος + checkbox
+  "κλειστό" ανά μέρα, "Αποθήκευση ωραρίου") — και τα δύο ήταν μέχρι πρότινος μόνο μέσω SQL, βλ.
+  backend README §"Tag & hours editing". Χρειάζεται admin user (βλ. backend README,
+  `create_admin_user` script).
 
 ## Σημαντικό: μόνο `status="active"` venues εμφανίζονται στο public app
 
@@ -79,6 +84,12 @@ sandboxed δίκτυο και μπλοκάρει το React hydration, οπότ�
   κλήση στο Google δεν χρειάζεται για να το ελέγξεις) και επιβεβαιώθηκαν οπτικά και τα 3 states —
   12/1000 (ήρεμο μωβ), 760/1000 (κίτρινο, "πλησιάζουμε το όριο"), 975/1000 (κόκκινο, "σταμάτησε
   αυτόματα") — μετά καθαρίστηκε η test-only γραμμή από τη βάση.
+- Tag & hours editing: στο Vogatsikou 3 (πραγματικό pending venue) πρόσθεσε το tag "Laptop-friendly"
+  από το picker (εμφανίστηκε αμέσως με 👤 admin icon + "✕"), έβαλε ωράριο Παρασκευής (18:00-02:00)
+  και σημείωσε Κυριακή κλειστό, "Αποθήκευση ωραρίου" → "Αποθηκεύτηκε το ωράριο." confirmation με τα
+  σωστά values να μένουν στα inputs μετά το reload του detail. Μετά καθαρίστηκαν όλες οι test-only
+  εγγραφές (venue_tags, venue_hours, confidence_audits) ώστε τα πραγματικά seed venues να μείνουν
+  ως είχαν.
 
 ## Design
 

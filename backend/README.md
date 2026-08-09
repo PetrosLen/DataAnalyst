@@ -164,9 +164,10 @@ curl -u founder@example.com -X PATCH http://localhost:8000/api/v1/admin/venues/1
   -d '{"status": "active", "overall_confidence": 0.8}'
 ```
 
-Not built yet: venue creation via API (use the seed loader), tag/hours editing (still DB-direct),
-and the low-confidence/stale/duplicate queues from the design doc (`§11`) — those are just
-`GET /admin/venues` with different filters for now, no dedicated views.
+Tag and hours editing now have their own endpoints — see §"Tag & hours editing" below. Still not
+built: venue creation via API (use the seed loader) and the low-confidence/stale/duplicate queues
+from the design doc (`§11`) — those are just `GET /admin/venues` with different filters for now,
+no dedicated views.
 
 ## Photos (`venue_media`)
 
@@ -251,6 +252,27 @@ Admin workflow:
   `google_place_id` (for spotting a bad Text Search match)
 - `PATCH /api/v1/admin/venues/{id}/media/{media_id}` with `{"license_ok": true}` → makes a photo
   public; logged to `confidence_audits` (`entity_type="venue_media"`) like any other edit.
+
+## Tag & hours editing (`/admin/venues/{id}/tags`, `/admin/venues/{id}/hours`)
+
+Closes the gap the README used to flag here as "still DB-direct" — an admin can now add/remove
+tags and correct opening hours from the panel itself, no SQL required.
+
+- `GET /admin/tags` — the full tag dictionary (for the "add a tag" picker; not venue-scoped).
+- `POST /admin/venues/{id}/tags` with `{tag_slug, confidence}` — assigns a tag with
+  `assigned_by="admin"`, or re-confidences/re-claims it if some other source already had it. An
+  admin's explicit call always wins — this is the same rule `audience_signal.py` and the seed
+  loader's `claude_suggested` tags already respect in the other direction.
+- `DELETE /admin/venues/{id}/tags/{tag_slug}` — removes it.
+- `PUT /admin/venues/{id}/hours` with a list of `{day_of_week, open_time, close_time, is_closed}`
+  (send only the days you're changing — `day_of_week` follows the 0=Monday..6=Sunday convention
+  used everywhere else in this codebase). `venue_hours` is temporal (`valid_from`/`valid_to`), so a
+  real change **expires the old row instead of mutating it** — what we used to believe stays
+  queryable — and a manual admin entry is stored at `confidence=1.0` (fully confirmed). A day with
+  no existing row and nothing sent for it just stays "unknown," which is different from "closed."
+
+Every change here logs to `confidence_audits` (`entity_type="venue_tag"` / `"venue_hours"`) exactly
+like every other admin edit.
 
 ## Tests
 

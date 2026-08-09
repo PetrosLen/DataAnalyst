@@ -40,6 +40,27 @@ export type AdminVenueMedia = {
   attribution: string | null;
 };
 
+export type AdminVenueHours = {
+  day_of_week: number;
+  open_time: string | null;
+  close_time: string | null;
+  is_closed: boolean;
+  confidence: number;
+};
+
+export type AdminVenueHoursUpdate = {
+  day_of_week: number;
+  open_time?: string | null;
+  close_time?: string | null;
+  is_closed?: boolean;
+};
+
+export type AdminTag = {
+  slug: string;
+  name: string;
+  tag_type: string;
+};
+
 export type AdminVenueDetail = AdminVenueListItem & {
   description_short: string | null;
   description_long: string | null;
@@ -53,6 +74,7 @@ export type AdminVenueDetail = AdminVenueListItem & {
   tags: AdminVenueTag[];
   sources: AdminVenueSource[];
   media: AdminVenueMedia[];
+  hours: AdminVenueHours[];
 };
 
 export type GooglePlacesUsage = {
@@ -131,6 +153,47 @@ export async function updateVenue(
 
 export async function getGooglePlacesUsage(creds: AdminCredentials): Promise<GooglePlacesUsage> {
   const res = await adminFetch("/admin/google-places-usage", creds, undefined);
+  return res.json();
+}
+
+export async function listTags(creds: AdminCredentials): Promise<AdminTag[]> {
+  const res = await adminFetch("/admin/tags", creds, undefined);
+  return res.json();
+}
+
+export async function assignVenueTag(
+  creds: AdminCredentials,
+  venueId: number,
+  tagSlug: string,
+  confidence: number
+): Promise<AdminVenueDetail> {
+  const res = await adminFetch(`/admin/venues/${venueId}/tags`, creds, {
+    method: "POST",
+    body: JSON.stringify({ tag_slug: tagSlug, confidence }),
+  });
+  return res.json();
+}
+
+export async function removeVenueTag(
+  creds: AdminCredentials,
+  venueId: number,
+  tagSlug: string
+): Promise<AdminVenueDetail> {
+  const res = await adminFetch(`/admin/venues/${venueId}/tags/${encodeURIComponent(tagSlug)}`, creds, {
+    method: "DELETE",
+  });
+  return res.json();
+}
+
+export async function updateVenueHours(
+  creds: AdminCredentials,
+  venueId: number,
+  days: AdminVenueHoursUpdate[]
+): Promise<AdminVenueDetail> {
+  const res = await adminFetch(`/admin/venues/${venueId}/hours`, creds, {
+    method: "PUT",
+    body: JSON.stringify(days),
+  });
   return res.json();
 }
 

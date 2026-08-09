@@ -13,18 +13,23 @@ from app.db.models import (
     Tag,
     UserFeedback,
     Venue,
+    VenueHours,
     VenueMedia,
     VenueSource,
     VenueTag,
 )
 from app.db.session import get_db
 from app.schemas.admin import (
+    AdminTagOut,
     AdminVenueDetail,
+    AdminVenueHoursOut,
+    AdminVenueHoursUpdate,
     AdminVenueListItem,
     AdminVenueListResponse,
     AdminVenueMediaOut,
     AdminVenueMediaUpdate,
     AdminVenueSourceOut,
+    AdminVenueTagAssign,
     AdminVenueTagOut,
     AdminVenueUpdate,
 )
@@ -45,6 +50,14 @@ def _slug_maps(db: Session, venue_ids: list[int]) -> tuple[dict[int, str], dict[
     categories = {c.id: c.slug for c in db.query(Category)}
     city_areas = {a.id: a.slug for a in db.query(CityArea)}
     return categories, city_areas
+
+
+@router.get("/tags", response_model=list[AdminTagOut])
+def list_tags(db: Session = Depends(get_db)) -> list[AdminTagOut]:
+    """The full tag dictionary, for the "add a tag" picker in the venue edit
+    panel — not venue-scoped, same list regardless of which venue you're on."""
+    tags = db.query(Tag).order_by(Tag.tag_type, Tag.name).all()
+    return [AdminTagOut(slug=t.slug, name=t.name, tag_type=t.tag_type) for t in tags]
 
 
 @router.get("/venues", response_model=AdminVenueListResponse)
@@ -109,6 +122,12 @@ def _to_detail(db: Session, venue: Venue) -> AdminVenueDetail:
         .group_by(UserFeedback.feedback_type)
         .all()
     )
+    hours = (
+        db.query(VenueHours)
+        .filter(VenueHours.venue_id == venue.id, VenueHours.valid_to.is_(None))
+        .order_by(VenueHours.day_of_week)
+        .all()
+    )
 
     return AdminVenueDetail(
         id=venue.id,
@@ -148,6 +167,16 @@ def _to_detail(db: Session, venue: Venue) -> AdminVenueDetail:
         media=[
             AdminVenueMediaOut(id=m.id, url=m.url, license_ok=m.license_ok, attribution=m.attribution)
             for m in media
+        ],
+        hours=[
+            AdminVenueHoursOut(
+                day_of_week=h.day_of_week,
+                open_time=h.open_time,
+                close_time=h.close_time,
+                is_closed=h.is_closed,
+                confidence=float(h.confidence),
+            )
+            for h in hours
         ],
     )
 
@@ -230,6 +259,165 @@ def update_venue_media(
             )
         )
         media.license_ok = payload.license_ok
+
+    db.commit()
+    db.refresh(venue)
+    return _to_detail(db, venue)
+
+
+@router.post("/venues/{venue_id}/tags", response_model=AdminVenueDetail)
+def assign_venue_tag(
+    venue_id: int,
+    payload: AdminVenueTagAssign,
+    admin: AdminUser = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+) -> AdminVenueDetail:
+    """Assign (or re-confidence) a tag with assigned_by="admin" — a human's
+    explicit call, which the audience-lean signal (see
+    app/recommendation/audience_signal.py) and Claude-suggested tags both
+    already know to never override."""
+    venue = db.query(Venue).filter_by(id=venue_id).first()
+    if venue is None:
+        raise HTTPException(status_code=404, detail="Venue not found")
+    tag = db.query(Tag).filter_by(slug=payload.tag_slug).first()
+    if tag is None:
+        raise HTTPException(status_code=404, detail="Tag not found")
+
+    existing = db.query(VenueTag).filter_by(venue_id=venue_id, tag_id=tag.id).first()
+    if existing is None:
+        db.add(
+            VenueTag(
+                venue_id=venue_id,
+                tag_id=tag.id,
+                confidence=payload.confidence,
+                assigned_by="admin",
+            )
+        )
+        db.add(
+            ConfidenceAudit(
+                entity_type="venue_tag",
+                entity_id=venue_id,
+                field_name=tag.slug,
+                old_value=None,
+                new_value=f"assigned (confidence={payload.confidence})",
+                changed_by=admin.email,
+            )
+        )
+    else:
+        db.add(
+            ConfidenceAudit(
+                entity_type="venue_tag",
+                entity_id=venue_id,
+                field_name=tag.slug,
+                old_value=f"{existing.assigned_by} (confidence={existing.confidence})",
+                new_value=f"admin (confidence={payload.confidence})",
+                changed_by=admin.email,
+            )
+        )
+        existing.confidence = payload.confidence
+        existing.assigned_by = "admin"
+
+    db.commit()
+    db.refresh(venue)
+    return _to_detail(db, venue)
+
+
+@router.delete("/venues/{venue_id}/tags/{tag_slug}", response_model=AdminVenueDetail)
+def remove_venue_tag(
+    venue_id: int,
+    tag_slug: str,
+    admin: AdminUser = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+) -> AdminVenueDetail:
+    venue = db.query(Venue).filter_by(id=venue_id).first()
+    if venue is None:
+        raise HTTPException(status_code=404, detail="Venue not found")
+    tag = db.query(Tag).filter_by(slug=tag_slug).first()
+    if tag is None:
+        raise HTTPException(status_code=404, detail="Tag not found")
+    existing = db.query(VenueTag).filter_by(venue_id=venue_id, tag_id=tag.id).first()
+    if existing is None:
+        raise HTTPException(status_code=404, detail="Venue does not have this tag")
+
+    db.add(
+        ConfidenceAudit(
+            entity_type="venue_tag",
+            entity_id=venue_id,
+            field_name=tag.slug,
+            old_value=f"{existing.assigned_by} (confidence={existing.confidence})",
+            new_value=None,
+            changed_by=admin.email,
+        )
+    )
+    db.delete(existing)
+
+    db.commit()
+    db.refresh(venue)
+    return _to_detail(db, venue)
+
+
+@router.put("/venues/{venue_id}/hours", response_model=AdminVenueDetail)
+def update_venue_hours(
+    venue_id: int,
+    payload: list[AdminVenueHoursUpdate],
+    admin: AdminUser = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+) -> AdminVenueDetail:
+    """Replaces the current hours for whichever days are included in the
+    payload (send only the days you're changing — days you leave out keep
+    whatever they already had). venue_hours is temporal (valid_from/
+    valid_to), so an actual change expires the old row instead of mutating
+    it in place — the history of what we used to believe stays queryable.
+    A manual admin entry is treated as fully confirmed: confidence=1.0."""
+    venue = db.query(Venue).filter_by(id=venue_id).first()
+    if venue is None:
+        raise HTTPException(status_code=404, detail="Venue not found")
+
+    now = datetime.now(timezone.utc)
+    for day in payload:
+        current = (
+            db.query(VenueHours)
+            .filter_by(venue_id=venue_id, day_of_week=day.day_of_week, valid_to=None)
+            .first()
+        )
+        unchanged = (
+            current is not None
+            and current.open_time == day.open_time
+            and current.close_time == day.close_time
+            and current.is_closed == day.is_closed
+        )
+        if unchanged:
+            continue
+
+        old_summary = (
+            "χωρίς καταχωρημένο ωράριο"
+            if current is None
+            else ("κλειστό" if current.is_closed else f"{current.open_time}-{current.close_time}")
+        )
+        new_summary = "κλειστό" if day.is_closed else f"{day.open_time}-{day.close_time}"
+        db.add(
+            ConfidenceAudit(
+                entity_type="venue_hours",
+                entity_id=venue_id,
+                field_name=f"day_{day.day_of_week}",
+                old_value=old_summary,
+                new_value=new_summary,
+                changed_by=admin.email,
+            )
+        )
+
+        if current is not None:
+            current.valid_to = now
+        db.add(
+            VenueHours(
+                venue_id=venue_id,
+                day_of_week=day.day_of_week,
+                open_time=day.open_time,
+                close_time=day.close_time,
+                is_closed=day.is_closed,
+                confidence=1.0,
+            )
+        )
 
     db.commit()
     db.refresh(venue)
